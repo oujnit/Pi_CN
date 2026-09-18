@@ -75,8 +75,8 @@ export function createMermaidMarkdownTransformer(options: MermaidTransformerOpti
 				const art = render(token.text);
 				if (!art || art.width > context.availableWidth) return token.raw;
 				if (!context.isStreaming && art.warnings.length > 0) {
-					const suffix = art.warnings.length > 1 ? ` (+${art.warnings.length - 1} more)` : "";
-					const warning = `Mermaid diagram not rendered: ${art.warnings[0]}${suffix}`;
+					const suffix = art.warnings.length > 1 ? `（另有 ${art.warnings.length - 1} 条）` : "";
+					const warning = `Mermaid 图未渲染：${art.warnings[0]}${suffix}`;
 					const styledWarning = options.theme ? options.theme.fg("warning", warning) : warning;
 					return `${token.raw}\n${codeSpan(styledWarning)}  \n`;
 				}

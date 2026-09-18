@@ -582,7 +582,7 @@ async function loadExtension(
 		return { extension, error: null };
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
-		return { extension: null, error: `Failed to load extension: ${message}` };
+		return { extension: null, error: `加载扩展失败：${message}` };
 	}
 }
 

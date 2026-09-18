@@ -177,25 +177,25 @@ export class BashExecutionComponent extends Container {
 			if (hiddenLineCount > 0) {
 				if (this.expanded) {
 					statusParts.push(
-						`${theme.fg("muted", "(")}${keyHint("app.tools.expand", "to collapse")}${theme.fg("muted", ")")}`,
+						`${theme.fg("muted", "(")}${keyHint("app.tools.expand", "收起")}${theme.fg("muted", ")")}`,
 					);
 				} else {
 					statusParts.push(
-						`${theme.fg("muted", `... ${hiddenLineCount} more lines (`)}${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`,
+						`${theme.fg("muted", `... 还有 ${hiddenLineCount} 行 (`)}${keyHint("app.tools.expand", "展开")}${theme.fg("muted", ")")}`,
 					);
 				}
 			}
 
 			if (this.status === "cancelled") {
-				statusParts.push(theme.fg("warning", "(cancelled)"));
+				statusParts.push(theme.fg("warning", "(已取消)"));
 			} else if (this.status === "error") {
-				statusParts.push(theme.fg("error", `(exit ${this.exitCode})`));
+				statusParts.push(theme.fg("error", `(退出码 ${this.exitCode})`));
 			}
 
 			// Add truncation warning (context truncation, not preview truncation)
 			const wasTruncated = this.truncationResult?.truncated || contextTruncation.truncated;
 			if (wasTruncated && this.fullOutputPath) {
-				statusParts.push(theme.fg("warning", `Output truncated. Full output: ${this.fullOutputPath}`));
+				statusParts.push(theme.fg("warning", `输出已截断。完整输出：${this.fullOutputPath}`));
 			}
 
 			if (statusParts.length > 0) {

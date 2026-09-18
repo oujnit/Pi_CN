@@ -19,7 +19,7 @@ function formatLsCall(args: { path?: string; limit?: number } | undefined, theme
 	const pathDisplay = renderToolPath(str(args?.path), theme, cwd, { emptyFallback: "." });
 	let text = `${theme.fg("toolTitle", theme.bold("ls"))} ${pathDisplay}`;
 	if (limit !== undefined) {
-		text += theme.fg("toolOutput", ` (limit ${limit})`);
+		text += theme.fg("toolOutput", `（上限 ${limit}）`);
 	}
 	return text;
 }
@@ -41,7 +41,7 @@ function formatLsResult(
 		const remaining = lines.length - maxLines;
 		text += `\n${displayLines.map((line) => theme.fg("toolOutput", line)).join("\n")}`;
 		if (remaining > 0) {
-			text += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
+			text += `${theme.fg("muted", `\n...（还有 ${remaining} 行，`)} ${keyHint("app.tools.expand", "按此展开")}${theme.fg("muted", "）")}`;
 		}
 	}
 
@@ -49,9 +49,9 @@ function formatLsResult(
 	const truncation = result.details?.truncation;
 	if (entryLimit || truncation?.truncated) {
 		const warnings: string[] = [];
-		if (entryLimit) warnings.push(`${entryLimit} entries limit`);
-		if (truncation?.truncated) warnings.push(`${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)} limit`);
-		text += `\n${theme.fg("warning", `[Truncated: ${warnings.join(", ")}]`)}`;
+		if (entryLimit) warnings.push(`条目数上限 ${entryLimit}`);
+		if (truncation?.truncated) warnings.push(`大小上限 ${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)}`);
+		text += `\n${theme.fg("warning", `[已截断：${warnings.join("，")}]`)}`;
 	}
 	return text;
 }

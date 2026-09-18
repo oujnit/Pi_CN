@@ -21,13 +21,13 @@ const THINKING_SELECT_LIST_LAYOUT: SelectListLayoutOptions = {
 };
 
 const LEVEL_DESCRIPTIONS: Record<ThinkingLevel, string> = {
-	off: "No reasoning",
-	minimal: "Very brief reasoning (~1k tokens)",
-	low: "Light reasoning (~2k tokens)",
-	medium: "Moderate reasoning (~8k tokens)",
-	high: "Deep reasoning (~16k tokens)",
-	xhigh: "Extra-high reasoning (~32k tokens)",
-	max: "Maximum reasoning",
+	off: "不推理",
+	minimal: "极简推理（约 1k token）",
+	low: "轻度推理（约 2k token）",
+	medium: "中度推理（约 8k token）",
+	high: "深度推理（约 16k token）",
+	xhigh: "超高推理（约 32k token）",
+	max: "最大推理",
 };
 
 /**
@@ -68,16 +68,16 @@ export class ThinkingSelectorComponent extends Container implements Focusable {
 		this.allItems = availableLevels.map((level) => ({
 			value: level,
 			label: `${level === currentLevel ? "✓ " : "  "}${level}`,
-			description:
-				level === defaultThinkingLevel ? `${LEVEL_DESCRIPTIONS[level]} · default` : LEVEL_DESCRIPTIONS[level],
+				description:
+					level === defaultThinkingLevel ? `${LEVEL_DESCRIPTIONS[level]} · 默认` : LEVEL_DESCRIPTIONS[level],
 		}));
 
 		// Add top border
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));
-		this.addChild(new Text("Thinking Level", 0, 0));
+		this.addChild(new Text("思考级别", 0, 0));
 		this.addChild(new Spacer(1));
-		this.addChild(new Text(`${keyDisplayText("app.thinking.cycle")} cycles thinking levels in-session`, 0, 0));
+		this.addChild(new Text(`${keyDisplayText("app.thinking.cycle")} 可在会话中循环切换思考级别`, 0, 0));
 		this.addChild(new Spacer(1));
 
 		this.searchInput = new Input();
@@ -94,7 +94,7 @@ export class ThinkingSelectorComponent extends Container implements Focusable {
 			new Text(
 				theme.fg(
 					"dim",
-					`  ${keyDisplayText("tui.select.confirm")} to select · ${keyDisplayText("app.thinking.save")} to set as default · ${keyDisplayText("tui.select.cancel")} to cancel`,
+					`  ${keyDisplayText("tui.select.confirm")} 选择 · ${keyDisplayText("app.thinking.save")} 设为默认 · ${keyDisplayText("tui.select.cancel")} 取消`,
 				),
 				0,
 				0,

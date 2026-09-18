@@ -20,7 +20,7 @@ export type AuthSelectorProvider = {
 };
 
 export function formatAuthSelectorProviderType(authType: AuthSelectorProvider["authType"]): string {
-	return authType === "oauth" ? "subscription" : "API key";
+	return authType === "oauth" ? "订阅" : "API 密钥";
 }
 
 /**
@@ -69,7 +69,7 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 		this.addChild(new Spacer(1));
 
 		// Add title
-		const title = mode === "login" ? "Select provider to configure:" : "Select provider to logout:";
+		const title = mode === "login" ? "选择要配置的供应商：" : "选择要退出登录的供应商：";
 		this.addChild(new TruncatedText(theme.fg("accent", theme.bold(title)), 1, 0));
 		this.addChild(new Spacer(1));
 
@@ -154,17 +154,17 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 			const message =
 				this.allProviders.length === 0
 					? this.mode === "login"
-						? "No providers available"
-						: "No providers logged in. Use /login first."
-					: "No matching providers";
+						? "没有可用的供应商"
+						: "没有已登录的供应商。请先使用 /login。"
+					: "没有匹配的供应商";
 			this.listContainer.addChild(new TruncatedText(theme.fg("muted", `  ${message}`), 1, 0));
 		}
 	}
 
 	private formatStatusIndicator(provider: AuthSelectorProvider): string {
-		if (!provider.status) return theme.fg("muted", " • unconfigured");
+		if (!provider.status) return theme.fg("muted", " • 未配置");
 		if (provider.status.type !== provider.authType) {
-			const label = provider.status.type === "oauth" ? "subscription configured" : "API key configured";
+			const label = provider.status.type === "oauth" ? "已配置订阅" : "已配置 API 密钥";
 			return theme.fg("muted", " • ") + theme.fg("warning", label);
 		}
 		if (
@@ -172,10 +172,10 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 			provider.status.source === "OAuth" ||
 			provider.status.source === "stored credential"
 		) {
-			return theme.fg("success", " ✓ configured");
+			return theme.fg("success", " ✓ 已配置");
 		}
 		const source = /^[A-Z][A-Z0-9_]*(?:, [A-Z][A-Z0-9_]*)*$/.test(provider.status.source)
-			? `env: ${provider.status.source}`
+			? `环境变量 ${provider.status.source}`
 			: provider.status.source;
 		return theme.fg("success", ` ✓ ${source}`);
 	}

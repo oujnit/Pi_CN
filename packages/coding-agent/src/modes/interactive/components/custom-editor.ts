@@ -42,7 +42,7 @@ export class CustomEditor extends Editor {
 		let statusWidth = visibleWidth(status);
 		if (statusWidth === 0) return super.renderTopBorder(width, hiddenLineCount);
 
-		const overflowLabel = hiddenLineCount > 0 ? ` ↑ ${hiddenLineCount} more ` : undefined;
+		const overflowLabel = hiddenLineCount > 0 ? ` ↑ 还有 ${hiddenLineCount} 行 ` : undefined;
 		const overflowLabelWidth = overflowLabel ? visibleWidth(overflowLabel) : 0;
 		const overflowStart = Math.floor((width - overflowLabelWidth) / 2);
 		const canFitOverflow = () =>

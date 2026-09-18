@@ -134,9 +134,9 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 		// Header
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));
-		this.addChild(new Text(theme.fg("accent", theme.bold("Model Configuration")), 0, 0));
+		this.addChild(new Text(theme.fg("accent", theme.bold("模型配置")), 0, 0));
 		this.addChild(
-			new Text(theme.fg("muted", `Session-only. ${keyDisplayText("app.models.save")} to save to settings.`), 0, 0),
+			new Text(theme.fg("muted", `仅当前会话有效。${keyDisplayText("app.models.save")} 可保存到设置。`), 0, 0),
 		);
 		this.addChild(new Spacer(1));
 
@@ -197,19 +197,19 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 		const unavailableCount = this.enabledIds?.filter((id) => !this.modelsById.has(id)).length ?? 0;
 		const allEnabled = this.enabledIds === null;
 		const countText = allEnabled
-			? "all enabled"
-			: `${enabledCount}/${this.allIds.length} enabled${unavailableCount ? ` · ${unavailableCount} unavailable` : ""}`;
+			? "全部启用"
+			: `${enabledCount}/${this.allIds.length} 个已启用${unavailableCount ? ` · ${unavailableCount} 个不可用` : ""}`;
 		const parts = [
-			`${keyDisplayText("tui.select.confirm")} toggle`,
-			`${keyDisplayText("app.models.enableAll")} all`,
-			`${keyDisplayText("app.models.clearAll")} clear`,
-			`${keyDisplayText("app.models.toggleProvider")} provider`,
-			`${keyDisplayText("app.models.reorderUp")}/${keyDisplayText("app.models.reorderDown")} reorder`,
-			`${keyDisplayText("app.models.save")} save`,
+			`${keyDisplayText("tui.select.confirm")} 切换`,
+			`${keyDisplayText("app.models.enableAll")} 全选`,
+			`${keyDisplayText("app.models.clearAll")} 清空`,
+			`${keyDisplayText("app.models.toggleProvider")} 供应商`,
+			`${keyDisplayText("app.models.reorderUp")}/${keyDisplayText("app.models.reorderDown")} 排序`,
+			`${keyDisplayText("app.models.save")} 保存`,
 			countText,
 		];
 		return this.isDirty
-			? theme.fg("dim", `  ${parts.join(" · ")} `) + theme.fg("warning", "(unsaved)")
+			? theme.fg("dim", `  ${parts.join(" · ")} `) + theme.fg("warning", "(未保存)")
 			: theme.fg("dim", `  ${parts.join(" · ")}`);
 	}
 
@@ -236,7 +236,7 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 		this.listContainer.clear();
 
 		if (this.filteredItems.length === 0) {
-			this.listContainer.addChild(new Text(theme.fg("muted", "  No matching models"), 0, 0));
+			this.listContainer.addChild(new Text(theme.fg("muted", "  没有匹配的模型"), 0, 0));
 			return;
 		}
 
@@ -252,7 +252,7 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 			const id = item.model?.id ?? item.fullId;
 			const styledId = item.model ? id : theme.strikethrough(id);
 			const modelText = isSelected ? theme.fg("accent", styledId) : styledId;
-			const providerBadge = theme.fg("muted", item.model ? ` [${item.model.provider}]` : " [unavailable]");
+			const providerBadge = theme.fg("muted", item.model ? ` [${item.model.provider}]` : " [不可用]");
 			const status = item.model && item.enabled ? theme.fg("accent", "✓ ") : "  ";
 			this.listContainer.addChild(new Text(`${prefix}${status}${modelText}${providerBadge}`, 0, 0));
 		}
@@ -269,7 +269,7 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 			this.listContainer.addChild(new Spacer(1));
 			this.listContainer.addChild(
 				new Text(
-					theme.fg("muted", `  ${selected.model ? `Model Name: ${selected.model.name}` : "Model unavailable"}`),
+					theme.fg("muted", `  ${selected.model ? `模型名称：${selected.model.name}` : "模型不可用"}`),
 					0,
 					0,
 				),

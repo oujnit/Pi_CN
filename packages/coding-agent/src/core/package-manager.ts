@@ -1006,7 +1006,7 @@ export class DefaultPackageManager implements PackageManager {
 		const parsed = this.parseSource(source);
 		const scope: SourceScope = options?.local ? "project" : "user";
 		this.assertProjectTrustedForScope(scope);
-		await this.withProgress("install", source, `Installing ${source}...`, async () => {
+		await this.withProgress("install", source, `正在安装 ${source}...`, async () => {
 			if (parsed.type === "npm") {
 				await this.installNpm(parsed, scope, false);
 				return;
@@ -1018,11 +1018,11 @@ export class DefaultPackageManager implements PackageManager {
 			if (parsed.type === "local") {
 				const resolved = this.resolvePath(parsed.path);
 				if (!existsSync(resolved)) {
-					throw new Error(`Path does not exist: ${resolved}`);
+					throw new Error(`路径不存在：${resolved}`);
 				}
 				return;
 			}
-			throw new Error(`Unsupported install source: ${source}`);
+			throw new Error(`不支持的安装来源：${source}`);
 		});
 	}
 
@@ -1035,7 +1035,7 @@ export class DefaultPackageManager implements PackageManager {
 		const parsed = this.parseSource(source);
 		const scope: SourceScope = options?.local ? "project" : "user";
 		this.assertProjectTrustedForScope(scope);
-		await this.withProgress("remove", source, `Removing ${source}...`, async () => {
+		await this.withProgress("remove", source, `正在移除 ${source}...`, async () => {
 			if (parsed.type === "npm") {
 				await this.uninstallNpm(parsed, scope);
 				return;
@@ -1047,7 +1047,7 @@ export class DefaultPackageManager implements PackageManager {
 			if (parsed.type === "local") {
 				return;
 			}
-			throw new Error(`Unsupported remove source: ${source}`);
+			throw new Error(`不支持的移除来源：${source}`);
 		});
 	}
 
@@ -1137,7 +1137,7 @@ export class DefaultPackageManager implements PackageManager {
 		if (gitCandidates.length > 0) {
 			const gitTasks = gitCandidates.map(
 				(entry) => async () =>
-					this.withProgress("update", entry.source, `Updating ${entry.source}...`, async () => {
+					this.withProgress("update", entry.source, `正在更新 ${entry.source}...`, async () => {
 						await this.updateGit(entry.parsed, entry.scope);
 					}),
 			);
@@ -1168,8 +1168,8 @@ export class DefaultPackageManager implements PackageManager {
 			return;
 		}
 
-		const sourceLabel = sources.length === 1 ? sources[0].source : `${scope} npm packages`;
-		const message = sources.length === 1 ? `Updating ${sources[0].source}...` : `Updating ${scope} npm packages...`;
+		const sourceLabel = sources.length === 1 ? sources[0].source : `${scope} npm 包`;
+		const message = sources.length === 1 ? `正在更新 ${sources[0].source}...` : `正在更新 ${scope} npm 包...`;
 		const specs = sources.map((entry) => (entry.parsed.version ? entry.parsed.spec : `${entry.parsed.name}@latest`));
 
 		await this.withProgress("update", sourceLabel, message, async () => {
@@ -1276,7 +1276,7 @@ export class DefaultPackageManager implements PackageManager {
 				}
 				const action = await onMissing(resolvedSource);
 				if (action === "skip") return false;
-				if (action === "error") throw new Error(`Missing source: ${resolvedSource}`);
+				if (action === "error") throw new Error(`缺少来源：${resolvedSource}`);
 				await this.installParsedSource(parsed, resolvedScope);
 				return true;
 			};
@@ -1396,9 +1396,9 @@ export class DefaultPackageManager implements PackageManager {
 	private buildNoMatchingPackageMessage(source: string, configuredPackages: PackageSource[]): string {
 		const suggestion = this.findSuggestedConfiguredSource(source, configuredPackages);
 		if (!suggestion) {
-			return `No matching package found for ${source}`;
+			return `未找到匹配的包：${source}`;
 		}
-		return `No matching package found for ${source}. Did you mean ${suggestion}?`;
+		return `未找到匹配的包：${source}。你是想找 ${suggestion} 吗？`;
 	}
 
 	private findSuggestedConfiguredSource(source: string, configuredPackages: PackageSource[]): string | undefined {
@@ -1516,7 +1516,7 @@ export class DefaultPackageManager implements PackageManager {
 			{ cwd: this.cwd, timeoutMs: NETWORK_TIMEOUT_MS },
 		);
 		const raw = stdout.trim();
-		if (!raw) throw new Error("Empty response from npm view");
+		if (!raw) throw new Error("npm view 返回为空");
 		const parsed = JSON.parse(raw) as unknown;
 		if (typeof parsed === "string") {
 			return parsed;
@@ -1526,7 +1526,7 @@ export class DefaultPackageManager implements PackageManager {
 			const latest = range ? maxSatisfying(versions, range) : [...versions].sort(rcompare)[0];
 			if (latest) return latest;
 		}
-		throw new Error("Unexpected response from npm view");
+		throw new Error("npm view 返回了无法解析的内容");
 	}
 
 	private async gitHasAvailableUpdate(installedPath: string): Promise<boolean> {
@@ -1559,7 +1559,7 @@ export class DefaultPackageManager implements PackageManager {
 		const remoteHead = await this.runGitRemoteCommand(installedPath, ["ls-remote", "origin", "HEAD"]);
 		const match = remoteHead.match(/^([0-9a-f]{40})\s+HEAD$/m);
 		if (!match?.[1]) {
-			throw new Error("Failed to determine remote HEAD");
+			throw new Error("无法确定远程 HEAD");
 		}
 		return match[1];
 	}
@@ -1574,11 +1574,11 @@ export class DefaultPackageManager implements PackageManager {
 			});
 			const trimmedUpstream = upstream.trim();
 			if (!trimmedUpstream.startsWith("origin/")) {
-				throw new Error(`Unsupported upstream remote: ${trimmedUpstream}`);
+				throw new Error(`不支持的上游远程：${trimmedUpstream}`);
 			}
 			const branch = trimmedUpstream.slice("origin/".length);
 			if (!branch) {
-				throw new Error("Missing upstream branch name");
+				throw new Error("缺少上游分支名");
 			}
 			const head = await this.runCommandCapture("git", ["rev-parse", "@{upstream}"], {
 				cwd: installedPath,
@@ -1740,7 +1740,7 @@ export class DefaultPackageManager implements PackageManager {
 
 	private assertProjectTrustedForScope(scope: SourceScope): void {
 		if (scope === "project" && !this.settingsManager.isProjectTrusted()) {
-			throw new Error("Project is not trusted; refusing to access project package storage");
+			throw new Error("项目不受信任；拒绝访问项目包存储目录");
 		}
 	}
 
@@ -1751,7 +1751,7 @@ export class DefaultPackageManager implements PackageManager {
 		}
 		const [command, ...args] = configuredCommand;
 		if (!command) {
-			throw new Error("Invalid npmCommand: first array entry must be a non-empty command");
+			throw new Error("npmCommand 无效：数组第一项必须是非空命令");
 		}
 		return { command, args };
 	}
@@ -1962,7 +1962,7 @@ export class DefaultPackageManager implements PackageManager {
 			return;
 		}
 		try {
-			await this.withProgress("pull", sourceStr, `Refreshing ${sourceStr}...`, async () => {
+			await this.withProgress("pull", sourceStr, `正在刷新 ${sourceStr}...`, async () => {
 				await this.updateGit(source, "temporary");
 			});
 		} catch {
@@ -2097,7 +2097,7 @@ export class DefaultPackageManager implements PackageManager {
 		}
 		const installRoot = this.getGitInstallRoot(scope);
 		if (!installRoot) {
-			throw new Error("Missing git install root");
+			throw new Error("缺少 git 安装根目录");
 		}
 		return this.resolveManagedPath(installRoot, source.host, source.path);
 	}
@@ -2126,7 +2126,7 @@ export class DefaultPackageManager implements PackageManager {
 		const resolvedRoot = resolve(root);
 		const resolvedPath = resolve(resolvedRoot, ...parts);
 		if (resolvedPath !== resolvedRoot && !resolvedPath.startsWith(`${resolvedRoot}${sep}`)) {
-			throw new Error(`Refusing to use path outside package install root: ${resolvedPath}`);
+			throw new Error(`拒绝使用包安装根目录之外的路径：${resolvedPath}`);
 		}
 		return resolvedPath;
 	}
@@ -2548,7 +2548,7 @@ export class DefaultPackageManager implements PackageManager {
 			case "themes":
 				return accumulator.themes;
 			default:
-				throw new Error(`Unknown resource type: ${resourceType}`);
+				throw new Error(`未知的资源类型：${resourceType}`);
 		}
 	}
 
@@ -2655,7 +2655,7 @@ export class DefaultPackageManager implements PackageManager {
 			child.once("close", (code, signal) => {
 				if (timeout) clearTimeout(timeout);
 				if (timedOut) {
-					reject(new Error(`${command} ${args.join(" ")} timed out after ${options?.timeoutMs}ms`));
+					reject(new Error(`${command} ${args.join(" ")} 超时（${options?.timeoutMs}ms）`));
 					return;
 				}
 				if (code === 0) {
@@ -2663,7 +2663,7 @@ export class DefaultPackageManager implements PackageManager {
 					return;
 				}
 				const exitStatus = code === null ? `signal ${signal ?? "unknown"}` : `code ${code}`;
-				reject(new Error(`${command} ${args.join(" ")} failed with ${exitStatus}: ${stderr || stdout}`));
+				reject(new Error(`${command} ${args.join(" ")} 执行失败（${exitStatus}）：${stderr || stdout}`));
 			});
 		});
 	}
@@ -2676,7 +2676,7 @@ export class DefaultPackageManager implements PackageManager {
 				if (code === 0) {
 					resolvePromise();
 				} else {
-					reject(new Error(`${command} ${args.join(" ")} failed with code ${code}`));
+					reject(new Error(`${command} ${args.join(" ")} 执行失败，退出码 ${code}`));
 				}
 			});
 		});
@@ -2691,7 +2691,7 @@ export class DefaultPackageManager implements PackageManager {
 		});
 		if (result.error || result.status !== 0) {
 			throw new Error(
-				`Failed to run ${command} ${args.join(" ")}: ${result.error?.message || result.stderr || result.stdout}`,
+				`运行 ${command} ${args.join(" ")} 失败：${result.error?.message || result.stderr || result.stdout}`,
 			);
 		}
 		return (result.stdout || result.stderr || "").trim();

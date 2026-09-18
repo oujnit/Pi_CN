@@ -767,7 +767,7 @@ async function createCommandSettingsManager(options: {
 				}).loadProjectTrustExtensions()
 			: undefined;
 	for (const error of extensionsResult?.errors ?? []) {
-		projectTrustWarnings.push(`Failed to load extension "${error.path}": ${error.error}`);
+		projectTrustWarnings.push(`加载扩展 "${error.path}" 失败：${error.error}`);
 	}
 
 	const projectTrusted = await resolveProjectTrusted({

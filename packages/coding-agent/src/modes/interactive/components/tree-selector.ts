@@ -643,20 +643,20 @@ class TreeList implements Component {
 		let labels = "";
 		switch (this.filterMode) {
 			case "no-tools":
-				labels += " [no-tools]";
+				labels += " [无工具]";
 				break;
 			case "user-only":
-				labels += " [user]";
+				labels += " [用户]";
 				break;
 			case "labeled-only":
-				labels += " [labeled]";
+				labels += " [有标签]";
 				break;
 			case "all":
-				labels += " [all]";
+				labels += " [全部]";
 				break;
 		}
 		if (this.showLabelTimestamps) {
-			labels += " [+label time]";
+			labels += " [+标签时间]";
 		}
 		return labels;
 	}
@@ -665,7 +665,7 @@ class TreeList implements Component {
 		const lines: string[] = [];
 
 		if (this.filteredNodes.length === 0) {
-			lines.push(truncateToWidth(theme.fg("muted", "  No entries found"), width));
+			lines.push(truncateToWidth(theme.fg("muted", "  没有找到条目"), width));
 			lines.push(truncateToWidth(theme.fg("muted", `  (0/0)${this.getStatusLabels()}`), width));
 			return lines;
 		}
@@ -778,19 +778,19 @@ class TreeList implements Component {
 				if (role === "user") {
 					const msgWithContent = msg as { content?: unknown };
 					const content = normalize(this.extractContent(msgWithContent.content));
-					result = theme.fg("accent", "user: ") + content;
+					result = theme.fg("accent", "用户：") + content;
 				} else if (role === "assistant") {
 					const msgWithContent = msg as { content?: unknown; stopReason?: string; errorMessage?: string };
 					const textContent = normalize(this.extractContent(msgWithContent.content));
 					if (textContent) {
-						result = theme.fg("success", "assistant: ") + textContent;
+						result = theme.fg("success", "助手：") + textContent;
 					} else if (msgWithContent.stopReason === "aborted") {
-						result = theme.fg("success", "assistant: ") + theme.fg("muted", "(aborted)");
+						result = theme.fg("success", "助手：") + theme.fg("muted", "（已中止）");
 					} else if (msgWithContent.errorMessage) {
 						const errMsg = normalize(msgWithContent.errorMessage).slice(0, 80);
-						result = theme.fg("success", "assistant: ") + theme.fg("error", errMsg);
+						result = theme.fg("success", "助手：") + theme.fg("error", errMsg);
 					} else {
-						result = theme.fg("success", "assistant: ") + theme.fg("muted", "(no content)");
+						result = theme.fg("success", "助手：") + theme.fg("muted", "（无内容）");
 					}
 				} else if (role === "toolResult") {
 					const toolMsg = msg as { toolCallId?: string; toolName?: string };
@@ -798,7 +798,7 @@ class TreeList implements Component {
 					if (toolCall) {
 						result = theme.fg("muted", this.formatToolCall(toolCall.name, toolCall.arguments));
 					} else {
-						result = theme.fg("muted", `[${toolMsg.toolName ?? "tool"}]`);
+						result = theme.fg("muted", `[${toolMsg.toolName ?? "工具"}]`);
 					}
 				} else if (role === "bashExecution") {
 					const bashMsg = msg as { command?: string };
@@ -821,28 +821,28 @@ class TreeList implements Component {
 			}
 			case "compaction": {
 				const tokens = Math.round(entry.tokensBefore / 1000);
-				result = theme.fg("borderAccent", `[compaction: ${tokens}k tokens]`);
+				result = theme.fg("borderAccent", `[压缩: ${tokens}k token]`);
 				break;
 			}
 			case "branch_summary":
-				result = theme.fg("warning", `[branch summary]: `) + normalize(entry.summary);
+				result = theme.fg("warning", `[分支摘要]：`) + normalize(entry.summary);
 				break;
 			case "model_change":
-				result = theme.fg("dim", `[model: ${entry.modelId}]`);
+				result = theme.fg("dim", `[模型: ${entry.modelId}]`);
 				break;
 			case "thinking_level_change":
-				result = theme.fg("dim", `[thinking: ${entry.thinkingLevel}]`);
+				result = theme.fg("dim", `[思考: ${entry.thinkingLevel}]`);
 				break;
 			case "custom":
-				result = theme.fg("dim", `[custom: ${entry.customType}]`);
+				result = theme.fg("dim", `[自定义: ${entry.customType}]`);
 				break;
 			case "label":
-				result = theme.fg("dim", `[label: ${entry.label ?? "(cleared)"}]`);
+				result = theme.fg("dim", `[标签: ${entry.label ?? "(已清除)"}]`);
 				break;
 			case "session_info":
 				result = entry.name
-					? [theme.fg("dim", "[title: "), theme.fg("dim", entry.name), theme.fg("dim", "]")].join("")
-					: [theme.fg("dim", "[title: "), theme.italic(theme.fg("dim", "empty")), theme.fg("dim", "]")].join("");
+					? [theme.fg("dim", "[标题: "), theme.fg("dim", entry.name), theme.fg("dim", "]")].join("")
+					: [theme.fg("dim", "[标题: "), theme.italic(theme.fg("dim", "空")), theme.fg("dim", "]")].join("");
 				break;
 			default:
 				result = "";
@@ -974,12 +974,12 @@ class TreeList implements Component {
 			case "grep": {
 				const pattern = String(args.pattern || "");
 				const path = shortenPath(String(args.path || "."));
-				return `[grep: /${pattern}/ in ${path}]`;
+				return `[grep: /${pattern}/ 于 ${path}]`;
 			}
 			case "find": {
 				const pattern = String(args.pattern || "");
 				const path = shortenPath(String(args.path || "."));
-				return `[find: ${pattern} in ${path}]`;
+				return `[find: ${pattern} 于 ${path}]`;
 			}
 			case "ls": {
 				const path = shortenPath(String(args.path || "."));
@@ -1166,9 +1166,9 @@ class SearchLine implements Component {
 	render(width: number): string[] {
 		const query = this.treeList.getSearchQuery();
 		if (query) {
-			return [truncateToWidth(`  ${theme.fg("muted", "Type to search:")} ${theme.fg("accent", query)}`, width)];
+			return [truncateToWidth(`  ${theme.fg("muted", "输入以搜索：")} ${theme.fg("accent", query)}`, width)];
 		}
-		return [truncateToWidth(`  ${theme.fg("muted", "Type to search:")}`, width)];
+		return [truncateToWidth(`  ${theme.fg("muted", "输入以搜索：")}`, width)];
 	}
 
 	handleInput(_keyData: string): void {}
@@ -1215,12 +1215,12 @@ class TreeHelp implements Component {
 }
 
 const TREE_HELP_ITEMS: Array<{ keys: Keybinding[]; label: string; labelFirst?: boolean }> = [
-	{ keys: ["tui.select.up", "tui.select.down"], label: "move" },
-	{ keys: ["tui.editor.cursorLeft", "tui.editor.cursorRight"], label: "page" },
-	{ keys: ["app.tree.foldOrUp", "app.tree.unfoldOrDown"], label: "branch" },
-	{ keys: ["app.message.copy"], label: "copy" },
-	{ keys: ["app.tree.editLabel"], label: "label" },
-	{ keys: ["app.tree.toggleLabelTimestamp"], label: "label time" },
+	{ keys: ["tui.select.up", "tui.select.down"], label: "移动" },
+	{ keys: ["tui.editor.cursorLeft", "tui.editor.cursorRight"], label: "翻页" },
+	{ keys: ["app.tree.foldOrUp", "app.tree.unfoldOrDown"], label: "分支" },
+	{ keys: ["app.message.copy"], label: "复制" },
+	{ keys: ["app.tree.editLabel"], label: "标签" },
+	{ keys: ["app.tree.toggleLabelTimestamp"], label: "标签时间" },
 	{
 		keys: [
 			"app.tree.filter.default",
@@ -1229,10 +1229,10 @@ const TREE_HELP_ITEMS: Array<{ keys: Keybinding[]; label: string; labelFirst?: b
 			"app.tree.filter.labeledOnly",
 			"app.tree.filter.all",
 		],
-		label: "filters",
+		label: "过滤",
 		labelFirst: true,
 	},
-	{ keys: ["app.tree.filter.cycleForward", "app.tree.filter.cycleBackward"], label: "cycle", labelFirst: true },
+	{ keys: ["app.tree.filter.cycleForward", "app.tree.filter.cycleBackward"], label: "切换", labelFirst: true },
 ];
 
 function formatHelpKeys(keybindings: Keybinding[]): string {
@@ -1298,11 +1298,11 @@ class LabelInput implements Component, Focusable {
 		const lines: string[] = [];
 		const indent = "  ";
 		const availableWidth = width - indent.length;
-		lines.push(truncateToWidth(`${indent}${theme.fg("muted", "Label (empty to remove):")}`, width));
+		lines.push(truncateToWidth(`${indent}${theme.fg("muted", "标签（留空则移除）：")}`, width));
 		lines.push(...this.input.render(availableWidth).map((line) => truncateToWidth(`${indent}${line}`, width)));
 		lines.push(
 			truncateToWidth(
-				`${indent}${keyHint("tui.select.confirm", "save")}  ${keyHint("tui.select.cancel", "cancel")}`,
+				`${indent}${keyHint("tui.select.confirm", "保存")}  ${keyHint("tui.select.cancel", "取消")}`,
 				width,
 			),
 		);
@@ -1374,7 +1374,7 @@ export class TreeSelectorComponent extends Container implements Focusable {
 
 		this.addChild(new Spacer(1));
 		this.addChild(new DynamicBorder());
-		this.addChild(new Text(theme.bold("  Session Tree"), 1, 0));
+		this.addChild(new Text(theme.bold("  会话树"), 1, 0));
 		this.addChild(new TreeHelp());
 		this.addChild(new SearchLine(this.treeList));
 		this.addChild(new DynamicBorder());
