@@ -1,6 +1,6 @@
 # Pi_CN 汉化维护
 
-本目录保存 Pi_CN 的构建数据快照和汉化维护说明。`model-data/` 是本 Fork 在上游 v0.86.0 源码上生成并验证的构建快照，不代表上游发布时使用的数据。来源、生成时间和版本记录在 `model-data/snapshot.json`，文件哈希与结构校验位于 `model-data/data/.manifest.json`。
+本目录保存 Pi_CN 的构建数据快照和汉化维护说明。`model-data/` 是本 Fork 在上游 v0.86.1 源码上生成并验证的构建快照，不代表上游发布时使用的数据。来源、生成时间和版本记录在 `model-data/snapshot.json`，文件哈希与结构校验位于 `model-data/data/.manifest.json`。
 
 ## 更新流程
 

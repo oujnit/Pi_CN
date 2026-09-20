@@ -1,8 +1,8 @@
 {
-  "upstreamVersion": "0.86.0",
-  "sourceCommit": "ecac0a9c",
-  "forkCommit": "981af327224b8cde754d61e2e88b8c49bfac3985",
-  "generatedAt": "2026-09-20T03:29:43.278Z",
+  "upstreamVersion": "0.86.1",
+  "sourceCommit": "13cbf77d",
+  "forkCommit": "ec0723581096c2876ac69ac982d3d8888a669386",
+  "generatedAt": "2026-09-20T15:30:07.211Z",
   "source": "Pi_CN fork build snapshot produced by upstream generate-models.ts --strict --data-only; not the upstream release snapshot",
   "catalogSources": [
     "https://models.dev/api.json",

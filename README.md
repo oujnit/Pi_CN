@@ -16,7 +16,7 @@
 
 本仓库是 Pi agent harness 项目的主页，包含我们的可自我扩展的编程智能体。
 
-> **本 Fork 说明**：这是 [earendil-works/pi](https://github.com/earendil-works/pi) 的非官方简体中文 Fork，当前基于上游 `v0.86.0`。默认使用简体中文，也可即时切换英文。汉化范围与构建方法见下方[汉化说明](#汉化说明)。
+> **本 Fork 说明**：这是 [earendil-works/pi](https://github.com/earendil-works/pi) 的非官方简体中文 Fork，当前基于上游 `v0.86.1`。默认使用简体中文，也可即时切换英文。汉化范围与构建方法见下方[汉化说明](#汉化说明)。
 
 * **[@earendil-works/pi-coding-agent](packages/coding-agent)**：交互式编程智能体 CLI
 * **[@earendil-works/pi-agent-core](packages/agent)**：带工具调用与状态管理的智能体运行时
