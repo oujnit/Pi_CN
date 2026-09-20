@@ -25,6 +25,7 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 	{ name: "export", description: "导出会话（默认 HTML，也可指定路径：.html/.jsonl）" },
 	{ name: "import", description: "从 JSONL 文件导入并恢复会话" },
 	{ name: "share", description: "以私密 GitHub gist 形式分享会话" },
+	{ name: "bug", description: "向 Pi 开发者报告 bug", argumentHint: "<description>" },
 	{ name: "copy", description: "复制最后一条助手消息到剪贴板" },
 	{ name: "name", description: "设置会话显示名称" },
 	{ name: "session", description: "显示会话信息与统计" },
