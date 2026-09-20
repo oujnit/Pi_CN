@@ -88,6 +88,18 @@ function createPnpmGlobalInstall(): { root: string; packageDir: string } {
 	return { root, packageDir };
 }
 
+function createFakePnpmOnPath(): void {
+	const temp = mkdtempSync(join(tmpdir(), "pi-pnpm-command-"));
+	const binDir = join(temp, "bin");
+	const root = join(temp, "pnpm", "global", "5", "node_modules");
+	mkdirSync(binDir, { recursive: true });
+	const executable = join(binDir, process.platform === "win32" ? "pnpm.cmd" : "pnpm");
+	writeFileSync(executable, createFakePnpmScript(root));
+	chmodSync(executable, 0o755);
+	tempDir = temp;
+	process.env.PATH = `${binDir}${delimiter}${originalPath ?? ""}`;
+}
+
 function createYarnGlobalInstall(): { globalDir: string; packageDir: string } {
 	const temp = mkdtempSync(join(tmpdir(), "pi-yarn-"));
 	const binDir = join(temp, "bin");
@@ -161,6 +173,7 @@ describe("findNodePackageDir", () => {
 
 describe("detectInstallMethod", () => {
 	test("detects pnpm from Windows .pnpm install paths", () => {
+		createFakePnpmOnPath();
 		setExecPath(
 			"C:\\Users\\Admin\\Documents\\pnpm-repository\\global\\5\\.pnpm\\@earendil-works+pi-coding-agent@0.67.68\\node_modules\\@earendil-works\\pi-coding-agent\\dist\\cli.js",
 		);

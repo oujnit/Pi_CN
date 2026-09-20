@@ -71,7 +71,7 @@ describe("credential print commands", () => {
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 		try {
 			process.exitCode = undefined;
-			await main(["auth", "check", "--provider", "openai-codex", "--credentails"]);
+			await main(["--lang", "en", "auth", "check", "--provider", "openai-codex", "--credentails"]);
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stderr).toContain('Unknown option --credentails for "auth check".');
 			expect(stderr).toContain(
