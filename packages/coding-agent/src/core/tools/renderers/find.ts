@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Presentation for the find tool.
  *
@@ -24,9 +25,9 @@ function formatFindCall(args: { pattern: string; path?: string; limit?: number }
 		theme.fg("toolTitle", theme.bold("find")) +
 		" " +
 		(pattern === null ? invalidArg : theme.fg("accent", pattern || "")) +
-		theme.fg("toolOutput", ` 在 ${path === null ? invalidArg : path}`);
+		theme.fg("toolOutput", t("find.in_p", { p0: String(path === null ? invalidArg : path) }));
 	if (limit !== undefined) {
-		text += theme.fg("toolOutput", `（上限 ${limit}）`);
+		text += theme.fg("toolOutput", t("find.limit_p", { p0: String(limit) }));
 	}
 	return text;
 }
@@ -48,7 +49,7 @@ function formatFindResult(
 		const remaining = lines.length - maxLines;
 		text += `\n${displayLines.map((line) => theme.fg("toolOutput", line)).join("\n")}`;
 		if (remaining > 0) {
-			text += `${theme.fg("muted", `\n...（还有 ${remaining} 行，`)} ${keyHint("app.tools.expand", "按此展开")}${theme.fg("muted", "）")}`;
+			text += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
 		}
 	}
 
@@ -56,9 +57,10 @@ function formatFindResult(
 	const truncation = result.details?.truncation;
 	if (resultLimit || truncation?.truncated) {
 		const warnings: string[] = [];
-		if (resultLimit) warnings.push(`结果数上限 ${resultLimit}`);
-		if (truncation?.truncated) warnings.push(`大小上限 ${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)}`);
-		text += `\n${theme.fg("warning", `[已截断：${warnings.join("，")}]`)}`;
+		if (resultLimit) warnings.push(t("find.p_results_limit", { p0: String(resultLimit) }));
+		if (truncation?.truncated)
+			warnings.push(t("find.p_limit", { p0: String(formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)) }));
+		text += `\n${theme.fg("warning", `[Truncated: ${warnings.join(", ")}]`)}`;
 	}
 	return text;
 }

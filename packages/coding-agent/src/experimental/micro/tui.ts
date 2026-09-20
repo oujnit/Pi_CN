@@ -21,6 +21,7 @@ import {
 import { getAgentDir } from "../../config.ts";
 import { KeybindingsManager } from "../../core/keybindings.ts";
 import { createAllToolRenderers } from "../../core/tools/renderers/index.ts";
+import { t } from "../../i18n/index.ts";
 import { AssistantMessageComponent } from "../../modes/interactive/components/assistant-message.ts";
 import { CustomEditor } from "../../modes/interactive/components/custom-editor.ts";
 import { DynamicBorder } from "../../modes/interactive/components/dynamic-border.ts";
@@ -241,7 +242,7 @@ class MicroTui {
 		}
 		stats.push(`$${usage.totalCost.toFixed(3)}`);
 		if (usage.contextWindow > 0) {
-			const automatic = Number(view.conversation.config.threshold ?? 0) > 0 ? "（自动）" : "";
+			const automatic = Number(view.conversation.config.threshold ?? 0) > 0 ? t("tui.auto") : "";
 			const context =
 				usage.contextPercent === null
 					? `?/${formatTokens(usage.contextWindow)}${automatic}`
@@ -261,7 +262,14 @@ class MicroTui {
 		this.#footerHints.setText(
 			theme.fg(
 				"dim",
-				`${model ? `${model.provider}/${model.modelId}` : "未选择模型"} · 思考:${thinking} (${keyText("app.thinking.cycle")}) · ${keyText("app.model.select")} 或 /model · /login · /compact · ${keyText("app.message.followUp")} 排队追问 · ${keyText("app.clear")} 退出`,
+				t("tui.p_thinking_p_p_p_or_model", {
+					p0: String(model ? `${model.provider}/${model.modelId}` : t("tui.no_model")),
+					p1: String(thinking),
+					p2: String(keyText("app.thinking.cycle")),
+					p3: String(keyText("app.model.select")),
+					p4: String(keyText("app.message.followUp")),
+					p5: String(keyText("app.clear")),
+				}),
 			),
 		);
 	}
@@ -285,19 +293,19 @@ class MicroTui {
 		const compaction = view.conversation.compaction;
 		const generation = view.conversation.turn?.generation;
 		const runningTool = view.conversation.turn?.tools.find((tool) => tool.status === "running");
-		if (view.fatal) text = `致命错误：${view.fatal}`;
+		if (view.fatal) text = `Fatal: ${view.fatal}`;
 		else if (compaction) {
-			const reason = compaction.reason === "threshold" ? "自动" : compaction.reason;
+			const reason = compaction.reason === "threshold" ? t("tui.automatic") : compaction.reason;
 			text =
 				compaction.stage === "retrying"
-					? `正在重试压缩（${reason}，第 ${compaction.attempt} 次）...`
-					: `正在压缩（${reason}）...`;
+					? t("tui.retrying_p_compaction_attempt_p", { p0: String(reason), p1: String(compaction.attempt) })
+					: t("tui.running_p_compaction", { p0: String(reason) });
 		} else if (generation) {
-			if (generation.stage === "retrying") text = `正在重试生成（第 ${generation.attempt} 次）...`;
-			else if (generation.stage === "deferred") text = "等待延迟响应...";
-			else if (generation.stage === "waiting") text = "等待压缩...";
-			else text = generation.stage === "streaming" ? "处理中...（esc 中止）" : "正在准备响应...";
-		} else if (runningTool) text = `正在运行 ${runningTool.name}...（esc 中止）`;
+			if (generation.stage === "retrying") text = `Retrying generation (attempt ${generation.attempt})...`;
+			else if (generation.stage === "deferred") text = "Waiting for deferred response...";
+			else if (generation.stage === "waiting") text = "Waiting for compaction...";
+			else text = generation.stage === "streaming" ? t("tui.working_esc_to_abort") : t("tui.preparing_response");
+		} else if (runningTool) text = `Running ${runningTool.name}... (esc to abort)`;
 		if (text === this.#statusText) return;
 		this.#statusText = text;
 		this.#indicator?.dispose();
@@ -342,7 +350,7 @@ class MicroTui {
 				details: entry.data?.details,
 			});
 		} else if (entry.kind === "pi.summary") {
-			this.#addText("[压缩摘要]");
+			this.#addText(t("tui.compaction_summary"));
 			if (message?.role === "user") this.#addText(userContent(message.content));
 		} else if (entry.kind === "pi.notice" && message?.role === "user") this.#addText(userContent(message.content));
 		else if (entry.kind === "pi.handoff") this.#addText("[handoff]");
@@ -428,7 +436,7 @@ function showAuthNotice(dialog: LoginDialogComponent, notice: AuthEvent): void {
 	if (notice.type === "auth_url") dialog.showAuth(notice.url, notice.instructions);
 	else if (notice.type === "device_code") {
 		dialog.showDeviceCode(notice);
-		dialog.showWaiting("等待认证中...");
+		dialog.showWaiting(t("tui.waiting_for_authentication"));
 	} else if (notice.type === "info") dialog.showInfo(notice.message, notice.links);
 	else dialog.showProgress(notice.message);
 }
@@ -455,7 +463,7 @@ export async function runMicroTui(source: MicroViewSource, controller: MicroCont
 			description: model.provider,
 		}));
 		const selector = new ListSelector(
-			"选择模型：",
+			t("tui.select_model"),
 			items,
 			(value) => {
 				view.restoreEditor();

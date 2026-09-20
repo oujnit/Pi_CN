@@ -1,5 +1,6 @@
 import type { AuthInfoLink, OAuthDeviceCodeInfo } from "@earendil-works/pi-ai";
 import { Container, type Focusable, getKeybindings, Input, Spacer, Text, type TUI } from "@earendil-works/pi-tui";
+import { t } from "../../../i18n/index.ts";
 import { openBrowser } from "../../../utils/open-browser.ts";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
@@ -39,7 +40,7 @@ export class LoginDialogComponent extends Container implements Focusable {
 		this.onComplete = onComplete;
 
 		const providerName = providerNameOverride || providerId;
-		const title = titleOverride ?? `登录 ${providerName}`;
+		const title = titleOverride ?? `Login to ${providerName}`;
 
 		// Top border
 		this.addChild(new DynamicBorder());
@@ -83,11 +84,11 @@ export class LoginDialogComponent extends Container implements Focusable {
 	private cancel(): void {
 		this.abortController.abort();
 		if (this.inputRejecter) {
-			this.inputRejecter(new Error("已取消登录"));
+			this.inputRejecter(new Error("Login cancelled"));
 			this.inputResolver = undefined;
 			this.inputRejecter = undefined;
 		}
-		this.onComplete(false, "已取消登录");
+		this.onComplete(false, t("login_dialog.login_cancelled"));
 	}
 
 	/**
@@ -99,7 +100,8 @@ export class LoginDialogComponent extends Container implements Focusable {
 		const linkedUrl = `\x1b]8;;${url}\x07${url}\x1b]8;;\x07`;
 		this.contentContainer.addChild(new Text(theme.fg("accent", linkedUrl), 1, 0));
 
-		const clickHint = process.platform === "darwin" ? "Cmd+点击打开" : "Ctrl+点击打开";
+		const clickHint =
+			process.platform === "darwin" ? t("login_dialog.cmd_click_to_open") : t("login_dialog.ctrl_click_to_open");
 		const hyperlink = `\x1b]8;;${url}\x07${clickHint}\x1b]8;;\x07`;
 		this.contentContainer.addChild(new Text(theme.fg("dim", hyperlink), 1, 0));
 
@@ -121,11 +123,14 @@ export class LoginDialogComponent extends Container implements Focusable {
 		const linkedUrl = `\x1b]8;;${info.verificationUri}\x07${info.verificationUri}\x1b]8;;\x07`;
 		this.contentContainer.addChild(new Text(theme.fg("accent", linkedUrl), 1, 0));
 
-		const clickHint = process.platform === "darwin" ? "Cmd+点击打开" : "Ctrl+点击打开";
+		const clickHint =
+			process.platform === "darwin" ? t("login_dialog.cmd_click_to_open") : t("login_dialog.ctrl_click_to_open");
 		const hyperlink = `\x1b]8;;${info.verificationUri}\x07${clickHint}\x1b]8;;\x07`;
 		this.contentContainer.addChild(new Text(theme.fg("dim", hyperlink), 1, 0));
 		this.contentContainer.addChild(new Spacer(1));
-		this.contentContainer.addChild(new Text(theme.fg("warning", `输入代码：${info.userCode}`), 1, 0));
+		this.contentContainer.addChild(
+			new Text(() => theme.fg("warning", t("login_dialog.enter_code_p", { p0: String(info.userCode) })), 1, 0),
+		);
 
 		this.tui.requestRender();
 	}
@@ -138,7 +143,9 @@ export class LoginDialogComponent extends Container implements Focusable {
 		this.contentContainer.addChild(new Spacer(1));
 		this.contentContainer.addChild(new Text(theme.fg("dim", prompt), 1, 0));
 		this.contentContainer.addChild(this.input);
-		this.contentContainer.addChild(new Text(`(${keyHint("tui.select.cancel", "取消")})`, 1, 0));
+		this.contentContainer.addChild(
+			new Text(() => `(${keyHint("tui.select.cancel", t("login_dialog.to_cancel"))})`, 1, 0),
+		);
 		this.tui.requestRender();
 
 		return new Promise((resolve, reject) => {
@@ -155,11 +162,18 @@ export class LoginDialogComponent extends Container implements Focusable {
 		this.contentContainer.addChild(new Spacer(1));
 		this.contentContainer.addChild(new Text(theme.fg("text", message), 1, 0));
 		if (placeholder) {
-			this.contentContainer.addChild(new Text(theme.fg("dim", `例如：${placeholder}`), 1, 0));
+			this.contentContainer.addChild(
+				new Text(() => theme.fg("dim", t("login_dialog.e_g_p", { p0: String(placeholder) })), 1, 0),
+			);
 		}
 		this.contentContainer.addChild(this.input);
 		this.contentContainer.addChild(
-			new Text(`(${keyHint("tui.select.cancel", "取消，")} ${keyHint("tui.select.confirm", "提交")})`, 1, 0),
+			new Text(
+				() =>
+					`(${keyHint("tui.select.cancel", t("login_dialog.to_cancel_2"))} ${keyHint("tui.select.confirm", t("login_dialog.to_submit"))})`,
+				1,
+				0,
+			),
 		);
 
 		this.input.setValue("");
@@ -192,7 +206,9 @@ export class LoginDialogComponent extends Container implements Focusable {
 		}
 		if (showCloseHint) {
 			this.contentContainer.addChild(new Spacer(1));
-			this.contentContainer.addChild(new Text(`(${keyHint("tui.select.cancel", "关闭")})`, 1, 0));
+			this.contentContainer.addChild(
+				new Text(() => `(${keyHint("tui.select.cancel", t("login_dialog.to_close"))})`, 1, 0),
+			);
 		}
 		this.tui.requestRender();
 	}
@@ -203,7 +219,9 @@ export class LoginDialogComponent extends Container implements Focusable {
 	showWaiting(message: string): void {
 		this.contentContainer.addChild(new Spacer(1));
 		this.contentContainer.addChild(new Text(theme.fg("dim", message), 1, 0));
-		this.contentContainer.addChild(new Text(`(${keyHint("tui.select.cancel", "取消")})`, 1, 0));
+		this.contentContainer.addChild(
+			new Text(() => `(${keyHint("tui.select.cancel", t("login_dialog.to_cancel"))})`, 1, 0),
+		);
 		this.tui.requestRender();
 	}
 

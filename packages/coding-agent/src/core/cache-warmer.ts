@@ -8,6 +8,7 @@ import {
 	type Usage,
 } from "@earendil-works/pi-ai";
 import { getProviderEnvValue } from "@earendil-works/pi-ai/utils/provider-env";
+import { t } from "../i18n/index.ts";
 import type { ModelRuntime } from "./model-runtime.ts";
 import type { SessionEntry, SessionManager, UsageEntry } from "./session-manager.ts";
 import type { CacheWarmingMode } from "./settings-manager.ts";
@@ -389,18 +390,23 @@ function formatDollars(value: number): string {
 }
 
 function formatCacheWarmingEconomics(decision: CacheWarmingDecision): string {
-	if (!decision.economicsAvailable) return "缓存经济性数据不可用";
+	if (!decision.economicsAvailable) return t("cache_warmer.cache_economics_unavailable");
 	const probability = Math.round(decision.continuationProbability * 100);
 	const probabilityText =
 		decision.phase === "streaming"
-			? `代理运行期间会话延续概率 ${probability}%`
-			: `会话延续概率 ${probability}%`;
+			? t("cache_warmer.p_continuation_probability_while_agent_is_running", { p0: String(probability) })
+			: t("cache_warmer.p_continuation_probability", { p0: String(probability) });
 	const comparison = decision.action === "warm" ? ">=" : "<";
-	return `${probabilityText}，预期节省 ${formatDollars(decision.expectedSavings)} ${comparison} $${CACHE_WARMING_MINIMUM_EXPECTED_SAVINGS.toFixed(3)}`;
+	return t("cache_warmer.p_expected_savings_p_p_p", {
+		p0: String(probabilityText),
+		p1: String(formatDollars(decision.expectedSavings)),
+		p2: String(comparison),
+		p3: String(CACHE_WARMING_MINIMUM_EXPECTED_SAVINGS.toFixed(3)),
+	});
 }
 
 function formatCacheWarmingDecisionTime(nextWarmAt: number | undefined, now: number): string {
-	if (nextWarmAt === undefined || nextWarmAt <= now) return "即将决策";
+	if (nextWarmAt === undefined || nextWarmAt <= now) return t("cache_warmer.decision_now");
 	let remainingSeconds = Math.ceil((nextWarmAt - now) / 1000);
 	const hours = Math.floor(remainingSeconds / 3600);
 	remainingSeconds %= 3600;
@@ -410,7 +416,7 @@ function formatCacheWarmingDecisionTime(nextWarmAt: number | undefined, now: num
 	if (hours > 0) parts.push(`${hours}h`);
 	if (minutes > 0) parts.push(`${minutes}m`);
 	if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-	return `${parts.join(" ")} 后决策`;
+	return t("cache_warmer.decision_in_p", { p0: String(parts.join(" ")) });
 }
 
 /** One-line status for `/session`. */
@@ -419,19 +425,22 @@ export function formatCacheWarmingStatus(status: CacheWarmingStatus, now = Date.
 	// A decision is attached once pi (or an extension) acted on it; "inactive"
 	// without one never got that far.
 	if (!decision || (status.state === "inactive" && !decision.economicsAvailable && !status.extensionOverride)) {
-		return `未激活（${status.reason ?? "原因未知"}）`;
+		return t("cache_warmer.inactive_p", { p0: String(status.reason ?? t("cache_warmer.unknown_reason")) });
 	}
 	const details = status.extensionOverride
-		? `扩展覆盖，${formatCacheWarmingEconomics(decision)}`
+		? t("cache_warmer.extension_override_p", { p0: String(formatCacheWarmingEconomics(decision)) })
 		: `${formatCacheWarmingEconomics(decision)} -> ${decision.action}`;
-	if (status.state === "inactive") return `已停止（${details}）`;
-	if (status.state === "refreshing") return `正在预热缓存（${details}）`;
-	return `${formatCacheWarmingDecisionTime(status.nextWarmAt, now)}（${details}）`;
+	if (status.state === "inactive") return t("cache_warmer.stopped_p", { p0: String(details) });
+	if (status.state === "refreshing") return t("cache_warmer.warming_cache_p", { p0: String(details) });
+	return t("cache_warmer.p_p", {
+		p0: String(formatCacheWarmingDecisionTime(status.nextWarmAt, now)),
+		p1: String(details),
+	});
 }
 
 /** One-line transcript text for persisted cache-warming usage. */
 export function formatCacheWarmingUsage(entry: UsageEntry): string {
 	const note = entry.note ? ` (${entry.note})` : "";
 	const cost = entry.usage.cost.total.toFixed(6).replace(/(\.\d{3}\d*?)0+$/, "$1");
-	return `缓存已预热${note}：$${cost}`;
+	return t("cache_warmer.cache_warmed_p_p", { p0: String(note), p1: String(cost) });
 }

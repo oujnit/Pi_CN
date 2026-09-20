@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * TUI component for managing package resources (enable/disable)
  */
@@ -32,10 +33,10 @@ export type ScopedResolvedPaths = Record<ConfigWriteScope, ResolvedPaths>;
 const RESOURCE_TYPES = ["extensions", "skills", "prompts", "themes"] as const satisfies readonly ResourceType[];
 
 const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
-	extensions: "扩展",
-	skills: "技能",
-	prompts: "提示词",
-	themes: "主题",
+	extensions: t("config_selector.extensions"),
+	skills: t("config_selector.skills"),
+	prompts: t("config_selector.prompts"),
+	themes: t("config_selector.themes"),
 };
 
 interface ResourceItem {
@@ -88,12 +89,14 @@ function getGroupLabel(metadata: PathMetadata, agentDir: string): string {
 	if (metadata.source === "auto") {
 		if (metadata.baseDir) {
 			return metadata.scope === "user"
-				? `用户 (${formatBaseDir(metadata.baseDir)})`
-				: `项目 (${formatBaseDir(metadata.baseDir)})`;
+				? t("config_selector.user_p", { p0: String(formatBaseDir(metadata.baseDir)) })
+				: t("config_selector.project_p", { p0: String(formatBaseDir(metadata.baseDir)) });
 		}
-		return metadata.scope === "user" ? `用户 (${formatBaseDir(agentDir)})` : `项目 (${CONFIG_DIR_NAME}/)`;
+		return metadata.scope === "user"
+			? t("config_selector.user_p", { p0: String(formatBaseDir(agentDir)) })
+			: t("config_selector.project_p_2", { p0: String(CONFIG_DIR_NAME) });
 	}
-	return metadata.scope === "user" ? "用户设置" : "项目设置";
+	return metadata.scope === "user" ? t("config_selector.user_settings") : t("config_selector.project_settings");
 }
 
 function buildGroups(resolved: ResolvedPaths, agentDir: string): ResourceGroup[] {
@@ -200,16 +203,27 @@ class ConfigSelectorHeader implements Component {
 	invalidate(): void {}
 
 	render(width: number): string[] {
-		const title = theme.bold(this.writeScope === "project" ? "项目本地资源" : "全局资源");
+		const title = theme.bold(
+			this.writeScope === "project"
+				? t("config_selector.project_local_resources")
+				: t("config_selector.global_resources"),
+		);
 		const sep = theme.fg("muted", " · ");
-		const switchHint = this.projectModeAvailable ? keyHint("tui.input.tab", "切换模式") + sep : "";
+		const switchHint = this.projectModeAvailable
+			? keyHint("tui.input.tab", t("config_selector.switch_mode")) + sep
+			: "";
 		const actionHint =
-			this.writeScope === "project" ? rawKeyHint("space", "循环 继承/+/-") : rawKeyHint("space", "切换");
-		const hint = switchHint + actionHint + sep + rawKeyHint("esc", "关闭");
+			this.writeScope === "project"
+				? rawKeyHint("space", t("config_selector.cycle_inherit"))
+				: rawKeyHint("space", t("config_selector.toggle"));
+		const hint = switchHint + actionHint + sep + rawKeyHint("esc", t("config_selector.close"));
 		const spacing = Math.max(1, width - visibleWidth(title) - visibleWidth(hint));
 		const scopeHint =
 			this.writeScope === "project"
-				? theme.fg("muted", `${CONFIG_DIR_NAME}/settings.json · 继承的全局资源以暗色显示`)
+				? theme.fg(
+						"muted",
+						t("config_selector.p_settings_json_inherited_global_resources_are", { p0: String(CONFIG_DIR_NAME) }),
+					)
 				: theme.fg("muted", `~/${CONFIG_DIR_NAME}/agent/settings.json`);
 
 		return [
@@ -397,7 +411,7 @@ class ResourceList implements Component, Focusable {
 		lines.push("");
 
 		if (this.filteredItems.length === 0) {
-			lines.push(theme.fg("muted", "  没有找到资源"));
+			lines.push(theme.fg("muted", t("config_selector.no_resources_found")));
 			return lines;
 		}
 
@@ -415,7 +429,7 @@ class ResourceList implements Component, Focusable {
 			if (entry.type === "group") {
 				// Main group header (no cursor)
 				const inherited = this.writeScope === "project" && entry.group.scope === "user";
-				const label = theme.bold(`${entry.group.label}${inherited ? " · 继承自全局" : ""}`);
+				const label = theme.bold(`${entry.group.label}${inherited ? t("config_selector.inherited_global_2") : ""}`);
 				const groupLine = theme.fg(inherited ? "dim" : "accent", label);
 				lines.push(truncateToWidth(`  ${groupLine}`, width, ""));
 			} else if (entry.type === "subgroup") {
@@ -649,9 +663,9 @@ class ResourceList implements Component, Focusable {
 	private getItemSuffix(item: ResourceItem): string {
 		if (this.writeScope !== "project") return "";
 		const state = this.getProjectOverrideState(item);
-		if (state === "load") return theme.fg("muted", "  项目加载");
-		if (state === "unload") return theme.fg("muted", "  项目卸载");
-		return this.isInheritedGlobalItem(item) ? theme.fg("dim", "  继承自全局") : "";
+		if (state === "load") return theme.fg("muted", t("config_selector.project_load"));
+		if (state === "unload") return theme.fg("muted", t("config_selector.project_unload"));
+		return this.isInheritedGlobalItem(item) ? theme.fg("dim", t("config_selector.inherited_global")) : "";
 	}
 
 	private isDimmedItem(item: ResourceItem): boolean {

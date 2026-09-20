@@ -23,13 +23,13 @@ export class Loader extends Text {
 	private renderIndicatorVerbatim = false;
 	private spinnerColorFn: (str: string) => string;
 	private messageColorFn: (str: string) => string;
-	private message: string = "Loading...";
+	private message: string | (() => string) = "Loading...";
 
 	constructor(
 		ui: TUI,
 		spinnerColorFn: (str: string) => string,
 		messageColorFn: (str: string) => string,
-		message: string = "Loading...",
+		message: string | (() => string) = "Loading...",
 		indicator?: LoaderIndicatorOptions,
 	) {
 		super("", 1, 0);
@@ -56,7 +56,7 @@ export class Loader extends Text {
 		}
 	}
 
-	setMessage(message: string): void {
+	setMessage(message: string | (() => string)): void {
 		this.message = message;
 		this.updateDisplay();
 	}
@@ -93,7 +93,8 @@ export class Loader extends Text {
 	private updateDisplay(): void {
 		const renderedFrame = this.getRenderedIndicator();
 		const indicator = renderedFrame.length > 0 ? `${renderedFrame} ` : "";
-		this.setText(`${indicator}${this.messageColorFn(this.message)}`);
+		const message = typeof this.message === "function" ? this.message() : this.message;
+		this.setText(`${indicator}${this.messageColorFn(message)}`);
 		if (this.ui) {
 			this.ui.requestRender();
 		}

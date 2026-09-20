@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Multi-line editor component for extensions.
  * Supports Ctrl+G for external editor.
@@ -81,12 +82,12 @@ export class ExtensionEditorComponent extends Container implements Focusable {
 
 		// Add hint
 		const hint =
-			keyHint("tui.select.confirm", "提交") +
+			keyHint("tui.select.confirm", t("extension_editor.submit")) +
 			"  " +
-			keyHint("tui.input.newLine", "换行") +
+			keyHint("tui.input.newLine", t("extension_editor.newline")) +
 			"  " +
-			keyHint("tui.select.cancel", "取消") +
-			`  ${keyHint("app.editor.external", "外部编辑器")}`;
+			keyHint("tui.select.cancel", t("extension_editor.cancel")) +
+			`  ${keyHint("app.editor.external", "external editor")}`;
 		this.addChild(new Text(hint, 1, 0));
 
 		this.addChild(new Spacer(1));

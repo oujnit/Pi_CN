@@ -2134,7 +2134,7 @@ export class AgentSession {
 
 				if (result?.cancel) {
 					cancelledByExtension = true;
-					throw new Error("压缩已取消");
+					throw new Error("Compaction cancelled");
 				}
 
 				if (result?.compaction) {
@@ -2176,7 +2176,7 @@ export class AgentSession {
 			}
 
 			if (this._compactionAbortController.signal.aborted) {
-				throw new Error("压缩已取消");
+				throw new Error("Compaction cancelled");
 			}
 
 			this.sessionManager.appendCompaction(summary, firstKeptEntryId, tokensBefore, details, fromExtension, usage);
@@ -2444,7 +2444,7 @@ export class AgentSession {
 
 				if (extensionResult?.cancel) {
 					cancelledByExtension = true;
-					throw new Error("压缩已取消");
+					throw new Error("Compaction cancelled");
 				}
 
 				if (extensionResult?.compaction) {
@@ -3032,7 +3032,7 @@ export class AgentSession {
 			type: "auto_retry_end",
 			success: false,
 			attempt,
-			finalError: "重试已取消",
+			finalError: "Retry cancelled",
 		});
 	}
 
@@ -3257,10 +3257,12 @@ export class AgentSession {
 		options: { summarize?: boolean; customInstructions?: string; replaceInstructions?: boolean; label?: string } = {},
 	): Promise<{ editorText?: string; cancelled: boolean; aborted?: boolean; summaryEntry?: BranchSummaryEntry }> {
 		if (this.isStreaming) {
-			throw new Error("请等当前响应完成后再导航会话树。");
+			throw new Error("Wait for the current response to finish before navigating the session tree.");
 		}
 		if (this.isCompacting) {
-			throw new Error("请等当前压缩或会话树导航完成后再导航会话树。");
+			throw new Error(
+				"Wait for the current compaction or tree navigation to finish before navigating the session tree.",
+			);
 		}
 
 		const oldLeafId = this.sessionManager.getLeafId();
@@ -3616,7 +3618,7 @@ export class AgentSession {
 	async summarizeForBugReport(options: { hint?: string; signal: AbortSignal }): Promise<string> {
 		const model = this.model;
 		if (!model) {
-			throw new Error("未选择模型");
+			throw new Error("No model selected");
 		}
 		const { model: requestModel, apiKey, headers, env } = await this._getSummarizationRequestAuth(model);
 		return generateBugReportSummary({
