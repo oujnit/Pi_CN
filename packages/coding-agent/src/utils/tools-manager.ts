@@ -127,12 +127,12 @@ export async function getLatestVersion(repo: string): Promise<string> {
 
 	const location = response.status >= 300 && response.status < 400 ? response.headers.get("location") : null;
 	if (!location) {
-		throw new Error(`无法解析 ${repo} 最新版本：HTTP ${response.status}，无重定向`);
+		throw new Error(`Failed to resolve latest ${repo} release: HTTP ${response.status} without redirect`);
 	}
 
 	const tag = new URL(location, "https://github.com").pathname.split("/").pop();
 	if (!tag || !location.includes("/releases/tag/")) {
-		throw new Error(`无法解析 ${repo} 最新版本：重定向到了意外地址 ${location}`);
+		throw new Error(`Failed to resolve latest ${repo} release: unexpected redirect to ${location}`);
 	}
 	return decodeURIComponent(tag).replace(/^v/, "");
 }
@@ -142,11 +142,11 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 	const response = await fetchWithRetry(url, undefined, { timeoutMs: DOWNLOAD_TIMEOUT_MS });
 
 	if (!response.ok) {
-		throw new Error(`下载失败（HTTP ${response.status}）：${url}`);
+		throw new Error(`Download failed with HTTP ${response.status}: ${url}`);
 	}
 
 	if (!response.body) {
-		throw new Error("响应没有内容");
+		throw new Error("No response body");
 	}
 
 	const fileStream = createWriteStream(dest);
@@ -187,7 +187,7 @@ function formatSpawnFailure(result: SpawnSyncReturns<Buffer>): string {
 	if (stdout) {
 		return stdout;
 	}
-	return `退出状态 ${result.status ?? "unknown"}`;
+	return `exit status ${result.status ?? "unknown"}`;
 }
 
 function runExtractionCommand(command: string, args: string[]): string | null {
@@ -201,7 +201,7 @@ function runExtractionCommand(command: string, args: string[]): string | null {
 function extractTarGzArchive(archivePath: string, extractDir: string, assetName: string): void {
 	const failure = runExtractionCommand("tar", ["xzf", archivePath, "-C", extractDir]);
 	if (failure) {
-		throw new Error(`解压 ${assetName} 失败：${failure}`);
+		throw new Error(`Failed to extract ${assetName}: ${failure}`);
 	}
 }
 
@@ -251,13 +251,13 @@ function extractZipArchive(archivePath: string, extractDir: string, assetName: s
 		failures.push(tarFailure);
 	}
 
-	throw new Error(`解压 ${assetName} 失败：${failures.join("; ")}`);
+	throw new Error(`Failed to extract ${assetName}: ${failures.join("; ")}`);
 }
 
 // Download and install a tool
 async function downloadTool(tool: "fd" | "rg"): Promise<string> {
 	const config = TOOLS[tool];
-	if (!config) throw new Error(`未知工具：${tool}`);
+	if (!config) throw new Error(`Unknown tool: ${tool}`);
 
 	const plat = platform();
 	const architecture = arch();
@@ -269,7 +269,7 @@ async function downloadTool(tool: "fd" | "rg"): Promise<string> {
 	// Get asset name for this platform
 	const assetName = config.getAssetName(version, plat, architecture);
 	if (!assetName) {
-		throw new Error(`不支持的平台：${plat}/${architecture}`);
+		throw new Error(`Unsupported platform: ${plat}/${architecture}`);
 	}
 
 	// Create tools directory
@@ -297,7 +297,7 @@ async function downloadTool(tool: "fd" | "rg"): Promise<string> {
 		} else if (assetName.endsWith(".zip")) {
 			extractZipArchive(archivePath, extractDir, assetName);
 		} else {
-			throw new Error(`不支持的压缩格式：${assetName}`);
+			throw new Error(`Unsupported archive format: ${assetName}`);
 		}
 
 		// Find the binary in extracted files. Some archives contain files directly
@@ -314,7 +314,7 @@ async function downloadTool(tool: "fd" | "rg"): Promise<string> {
 		if (extractedBinary) {
 			renameSync(extractedBinary, binaryPath);
 		} else {
-			throw new Error(`压缩包中未找到二进制文件：应在 ${extractDir} 下的 ${binaryFileName}`);
+			throw new Error(`Binary not found in archive: expected ${binaryFileName} under ${extractDir}`);
 		}
 
 		// Make executable (Unix only)
@@ -359,7 +359,7 @@ export async function ensureTool(
 	if (!config) return undefined;
 
 	if (isOfflineModeEnabled()) {
-		onStatus?.({ type: "warning", message: `未找到 ${config.name}。已启用离线模式，跳过下载。` });
+		onStatus?.({ type: "warning", message: `${config.name} not found. Offline mode enabled, skipping download.` });
 		return undefined;
 	}
 
@@ -367,16 +367,16 @@ export async function ensureTool(
 	// Users must install via pkg.
 	if (platform() === "android") {
 		const pkgName = TERMUX_PACKAGES[tool] ?? tool;
-		onStatus?.({ type: "warning", message: `未找到 ${config.name}。请执行安装：pkg install ${pkgName}` });
+		onStatus?.({ type: "warning", message: `${config.name} not found. Install with: pkg install ${pkgName}` });
 		return undefined;
 	}
 
 	// Tool not found - download it
-	onStatus?.({ type: "info", message: `未找到 ${config.name}。正在下载...` });
+	onStatus?.({ type: "info", message: `${config.name} not found. Downloading...` });
 
 	try {
 		const path = await downloadTool(tool);
-		onStatus?.({ type: "info", message: `${config.name} 已安装到 ${path}` });
+		onStatus?.({ type: "info", message: `${config.name} installed to ${path}` });
 		return path;
 	} catch (e) {
 		// Include the error cause chain: fetch failures surface as a bare
@@ -393,7 +393,7 @@ export async function ensureTool(
 		}
 		onStatus?.({
 			type: "warning",
-			message: `下载 ${config.name} 失败：${messages.length > 0 ? messages.join("：") : String(e)}`,
+			message: `Failed to download ${config.name}: ${messages.length > 0 ? messages.join(": ") : String(e)}`,
 		});
 		return undefined;
 	}

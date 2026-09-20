@@ -1,5 +1,6 @@
 import { Container, getKeybindings, Spacer, Text } from "@earendil-works/pi-tui";
 import { APP_NAME } from "../../../config.ts";
+import { t } from "../../../i18n/index.ts";
 import { type TerminalTheme, theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 import { keyHint, rawKeyHint } from "./keybinding-hints.ts";
@@ -17,13 +18,33 @@ export interface FirstTimeSetupOptions {
 }
 
 const THEME_OPTIONS: Array<{ value: TerminalTheme; label: string }> = [
-	{ value: "dark", label: "深色" },
-	{ value: "light", label: "浅色" },
+	{
+		value: "dark",
+		get label() {
+			return t("first_time_setup.dark");
+		},
+	},
+	{
+		value: "light",
+		get label() {
+			return t("first_time_setup.light");
+		},
+	},
 ];
 
 const ANALYTICS_OPTIONS: Array<{ value: boolean; label: string }> = [
-	{ value: true, label: "共享匿名用量数据" },
-	{ value: false, label: "不共享" },
+	{
+		value: true,
+		get label() {
+			return t("first_time_setup.share_anonymous_usage_data");
+		},
+	},
+	{
+		value: false,
+		get label() {
+			return t("first_time_setup.don_t_share");
+		},
+	},
 ];
 
 const SETUP_LOGO_LINES = ["██████", "██  ██", "████  ██", "██    ██"];
@@ -52,28 +73,43 @@ export class FirstTimeSetupComponent extends Container {
 		this.addChild(new Spacer(1));
 		this.addChild(new Text(theme.fg("accent", SETUP_LOGO_LINES.join("\n")), 1, 0));
 		this.addChild(new Spacer(1));
-		this.addChild(new Text(theme.fg("accent", theme.bold(`欢迎使用 ${APP_NAME}，一个极简的编程助手。`)), 1, 0));
+		this.addChild(
+			new Text(
+				() =>
+					theme.fg(
+						"accent",
+						theme.bold(t("first_time_setup.welcome_to_p_the_minimal_coding_agent", { p0: String(APP_NAME) })),
+					),
+				1,
+				0,
+			),
+		);
 		this.addChild(new Spacer(1));
 
 		if (this.step === "theme") {
-			this.addChild(new Text(theme.fg("text", "选择一个主题。"), 1, 0));
-			this.addChild(new Text(theme.fg("muted", `检测到的系统外观：${this.options.detectedTheme}`), 1, 0));
+			this.addChild(new Text(() => theme.fg("text", t("first_time_setup.pick_a_theme")), 1, 0));
+			this.addChild(
+				new Text(
+					() =>
+						theme.fg(
+							"muted",
+							t("first_time_setup.detected_system_appearance_p", { p0: String(this.options.detectedTheme) }),
+						),
+					1,
+					0,
+				),
+			);
 			this.addChild(new Spacer(1));
 			this.addOptionList(
 				THEME_OPTIONS.map((option) => option.label),
 				this.themeIndex,
 			);
 		} else {
-			this.addChild(new Text(theme.fg("text", "是否共享匿名用量数据？"), 1, 0));
 			this.addChild(
-				new Text(
-					theme.fg(
-						"muted",
-						"选择共享会在 settings.json 中存储一个跟踪标识符，并启用匿名用量分析。\n这有助于我们更好地调试、复现并解决 Pi 中的问题与缺陷。\n你可以使用 /privacy 查看共享的内容，\n并随时在 settings.json 中更改。",
-					),
-					1,
-					0,
-				),
+				new Text(() => theme.fg("text", t("first_time_setup.opt_in_to_anonymous_usage_data_sharing")), 1, 0),
+			);
+			this.addChild(
+				new Text(() => theme.fg("muted", t("first_time_setup.opting_in_stores_a_tracking_identifier_in")), 1, 0),
 			);
 			this.addChild(new Spacer(1));
 			this.addOptionList(
@@ -85,11 +121,15 @@ export class FirstTimeSetupComponent extends Container {
 		this.addChild(new Spacer(1));
 		this.addChild(
 			new Text(
-				rawKeyHint("↑↓", "移动") +
+				() =>
+					rawKeyHint("↑↓", t("first_time_setup.navigate")) +
 					"  " +
-					keyHint("tui.select.confirm", this.step === "theme" ? "继续" : "完成") +
+					keyHint(
+						"tui.select.confirm",
+						this.step === "theme" ? t("first_time_setup.continue") : t("first_time_setup.finish"),
+					) +
 					"  " +
-					keyHint("tui.select.cancel", "跳过设置"),
+					keyHint("tui.select.cancel", t("first_time_setup.skip_setup")),
 				1,
 				0,
 			),

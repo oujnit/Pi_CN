@@ -366,7 +366,7 @@ export function createShellToolDefinition(
 				const snapshot = await finishOutput();
 				const { text: outputText, details } = formatOutput(snapshot);
 				if (exitCode === null) {
-					throw new Error(appendStatus(outputText, "命令已终止，无退出码"));
+					throw new Error(appendStatus(outputText, "Command terminated without an exit code"));
 				}
 				if (exitCode !== 0) {
 					throw new Error(appendStatus(outputText, `Command exited with code ${exitCode}`));

@@ -11,6 +11,7 @@ import {
 	Spacer,
 	Text,
 } from "@earendil-works/pi-tui";
+import { t } from "../../../i18n/index.ts";
 import { getSelectListTheme, theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 import { keyDisplayText } from "./keybinding-hints.ts";
@@ -21,13 +22,13 @@ const THINKING_SELECT_LIST_LAYOUT: SelectListLayoutOptions = {
 };
 
 const LEVEL_DESCRIPTIONS: Record<ThinkingLevel, string> = {
-	off: "不推理",
-	minimal: "极简推理（约 1k token）",
-	low: "轻度推理（约 2k token）",
-	medium: "中度推理（约 8k token）",
-	high: "深度推理（约 16k token）",
-	xhigh: "超高推理（约 32k token）",
-	max: "最大推理",
+	off: t("thinking_selector.no_reasoning"),
+	minimal: t("thinking_selector.very_brief_reasoning_k_tokens"),
+	low: t("thinking_selector.light_reasoning_k_tokens"),
+	medium: t("thinking_selector.moderate_reasoning_k_tokens"),
+	high: t("thinking_selector.deep_reasoning_k_tokens"),
+	xhigh: t("thinking_selector.extra_high_reasoning_k_tokens"),
+	max: t("thinking_selector.maximum_reasoning"),
 };
 
 /**
@@ -69,15 +70,26 @@ export class ThinkingSelectorComponent extends Container implements Focusable {
 			value: level,
 			label: `${level === currentLevel ? "✓ " : "  "}${level}`,
 			description:
-				level === defaultThinkingLevel ? `${LEVEL_DESCRIPTIONS[level]} · 默认` : LEVEL_DESCRIPTIONS[level],
+				level === defaultThinkingLevel
+					? t("thinking_selector.p_default", { p0: String(LEVEL_DESCRIPTIONS[level]) })
+					: LEVEL_DESCRIPTIONS[level],
 		}));
 
 		// Add top border
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));
-		this.addChild(new Text("思考级别", 0, 0));
+		this.addChild(new Text(() => t("thinking_selector.thinking_level"), 0, 0));
 		this.addChild(new Spacer(1));
-		this.addChild(new Text(`${keyDisplayText("app.thinking.cycle")} 可在会话中循环切换思考级别`, 0, 0));
+		this.addChild(
+			new Text(
+				() =>
+					t("thinking_selector.p_cycles_thinking_levels_in_session", {
+						p0: String(keyDisplayText("app.thinking.cycle")),
+					}),
+				0,
+				0,
+			),
+		);
 		this.addChild(new Spacer(1));
 
 		this.searchInput = new Input();
@@ -92,10 +104,15 @@ export class ThinkingSelectorComponent extends Container implements Focusable {
 		this.addChild(new Spacer(1));
 		this.addChild(
 			new Text(
-				theme.fg(
-					"dim",
-					`  ${keyDisplayText("tui.select.confirm")} 选择 · ${keyDisplayText("app.thinking.save")} 设为默认 · ${keyDisplayText("tui.select.cancel")} 取消`,
-				),
+				() =>
+					theme.fg(
+						"dim",
+						t("thinking_selector.p_to_select_p_to_set_as", {
+							p0: String(keyDisplayText("tui.select.confirm")),
+							p1: String(keyDisplayText("app.thinking.save")),
+							p2: String(keyDisplayText("tui.select.cancel")),
+						}),
+					),
 				0,
 				0,
 			),

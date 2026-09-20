@@ -1,5 +1,6 @@
 import { Editor, type EditorOptions, type EditorTheme, type TUI, visibleWidth } from "@earendil-works/pi-tui";
 import type { AppKeybinding, KeybindingsManager } from "../../../core/keybindings.ts";
+import { t } from "../../../i18n/index.ts";
 import type { StatusIndicator } from "./status-indicator.ts";
 
 export type CustomEditorOptions = EditorOptions & {
@@ -42,7 +43,8 @@ export class CustomEditor extends Editor {
 		let statusWidth = visibleWidth(status);
 		if (statusWidth === 0) return super.renderTopBorder(width, hiddenLineCount);
 
-		const overflowLabel = hiddenLineCount > 0 ? ` ↑ 还有 ${hiddenLineCount} 行 ` : undefined;
+		const overflowLabel =
+			hiddenLineCount > 0 ? t("custom_editor.p_more", { p0: String(hiddenLineCount) }) : undefined;
 		const overflowLabelWidth = overflowLabel ? visibleWidth(overflowLabel) : 0;
 		const overflowStart = Math.floor((width - overflowLabelWidth) / 2);
 		const canFitOverflow = () =>

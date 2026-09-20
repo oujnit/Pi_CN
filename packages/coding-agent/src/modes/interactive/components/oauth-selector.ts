@@ -8,6 +8,7 @@ import {
 	Spacer,
 	TruncatedText,
 } from "@earendil-works/pi-tui";
+import { t } from "../../../i18n/index.ts";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 
@@ -20,7 +21,7 @@ export type AuthSelectorProvider = {
 };
 
 export function formatAuthSelectorProviderType(authType: AuthSelectorProvider["authType"]): string {
-	return authType === "oauth" ? "订阅" : "API 密钥";
+	return authType === "oauth" ? t("oauth_selector.subscription") : t("oauth_selector.api_key");
 }
 
 /**
@@ -69,7 +70,10 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 		this.addChild(new Spacer(1));
 
 		// Add title
-		const title = mode === "login" ? "选择要配置的供应商：" : "选择要退出登录的供应商：";
+		const title =
+			mode === "login"
+				? t("oauth_selector.select_provider_to_configure")
+				: t("oauth_selector.select_provider_to_logout");
 		this.addChild(new TruncatedText(theme.fg("accent", theme.bold(title)), 1, 0));
 		this.addChild(new Spacer(1));
 
@@ -154,17 +158,20 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 			const message =
 				this.allProviders.length === 0
 					? this.mode === "login"
-						? "没有可用的供应商"
-						: "没有已登录的供应商。请先使用 /login。"
-					: "没有匹配的供应商";
+						? t("oauth_selector.no_providers_available")
+						: t("oauth_selector.no_providers_logged_in_use_login_first")
+					: t("oauth_selector.no_matching_providers");
 			this.listContainer.addChild(new TruncatedText(theme.fg("muted", `  ${message}`), 1, 0));
 		}
 	}
 
 	private formatStatusIndicator(provider: AuthSelectorProvider): string {
-		if (!provider.status) return theme.fg("muted", " • 未配置");
+		if (!provider.status) return theme.fg("muted", t("oauth_selector.unconfigured"));
 		if (provider.status.type !== provider.authType) {
-			const label = provider.status.type === "oauth" ? "已配置订阅" : "已配置 API 密钥";
+			const label =
+				provider.status.type === "oauth"
+					? t("oauth_selector.subscription_configured")
+					: t("oauth_selector.api_key_configured");
 			return theme.fg("muted", " • ") + theme.fg("warning", label);
 		}
 		if (
@@ -172,10 +179,10 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 			provider.status.source === "OAuth" ||
 			provider.status.source === "stored credential"
 		) {
-			return theme.fg("success", " ✓ 已配置");
+			return theme.fg("success", t("oauth_selector.configured"));
 		}
 		const source = /^[A-Z][A-Z0-9_]*(?:, [A-Z][A-Z0-9_]*)*$/.test(provider.status.source)
-			? `环境变量 ${provider.status.source}`
+			? t("oauth_selector.env_p", { p0: String(provider.status.source) })
 			: provider.status.source;
 		return theme.fg("success", ` ✓ ${source}`);
 	}

@@ -16,7 +16,7 @@
 
 本仓库是 Pi agent harness 项目的主页，包含我们的可自我扩展的编程智能体。
 
-> **ℹ️ 本 Fork 说明**：这是 [earendil-works/pi](https://github.com/earendil-works/pi) 的非官方简体中文汉化 Fork，基于上游 `v0.85.1`。界面文案已整体汉化，功能与上游一致。汉化范围与构建方法见下方[汉化说明](#汉化说明)。
+> **本 Fork 说明**：这是 [earendil-works/pi](https://github.com/earendil-works/pi) 的非官方简体中文 Fork，当前基于上游 `v0.86.1`。默认使用简体中文，也可即时切换英文。汉化范围与构建方法见下方[汉化说明](#汉化说明)。
 
 * **[@earendil-works/pi-coding-agent](packages/coding-agent)**：交互式编程智能体 CLI
 * **[@earendil-works/pi-agent-core](packages/agent)**：带工具调用与状态管理的智能体运行时
@@ -52,62 +52,64 @@ Pi 不内置用于限制文件系统、进程、网络或凭据访问的权限�
 
 ## 汉化说明
 
-本 Fork 在上游源码基础上翻译了 `packages/coding-agent` 的用户界面文案，共约 **800 条**，覆盖 47 个文件：
+本 Fork 为 `packages/coding-agent` 建立了类型化的中英文文案表。中文覆盖主要 CLI、交互界面和已有汉化内容；实验功能仅迁移已有译文。
 
 **已汉化**
 
 - 启动横幅与 `/hotkeys` 快捷键帮助
-- 模型选择器、设置页、登录对话框、思考级别选择器、会话/会话树选择器等全部交互组件
-- 斜杠命令描述、`pi --help` 全部帮助文案
+- 模型选择器、设置页、登录对话框、思考级别选择器、会话与会话树选择器等主要交互组件
+- 斜杠命令描述、`pi --help` 和主要子命令提示
 - 包管理器、技能/资源加载提示、工具调用的显示标签、常用错误与状态消息
+- `/settings` 中的“语言 / Language”可即时切换当前实例并保存全局偏好
 
 **刻意保留英文**
 
-- 发给模型的系统提示词（翻译会降低模型工具调用质量）
-- 工具名与协议字符串（`vscode_get_*` 等）、CLI 参数名、模型 ID、键位名（escape、ctrl+c）
+- 模型输出、用户内容、系统提示词和外部扩展文案
+- 核心错误详情、事件字段、JSON/RPC 数据、工具结果和凭据命令输出
+- HTML 导出、上游长篇文档、工具名与协议字符串、CLI 参数名和模型 ID
 - 术语表统一为：provider→供应商、session→会话、fork→派生、extension→扩展、skill→技能、compaction→压缩、thinking→思考
+
+语言启动优先级为：`--lang` → `PI_LANG` → 全局 `settings.json` 中的 `language` → 简体中文。支持的值为 `zh-CN` 和 `en`，项目设置不会覆盖语言。
 
 **从源码构建汉化版**
 
 ```bash
-git clone https://github.com/oujnit/Pi_CN.git pi-zh && cd pi-zh
+git clone https://github.com/oujnit/Pi_CN.git pi-cn && cd pi-cn
 git checkout zh
-npm ci
-
-# 依次构建（上游 build 会先联网刷新模型数据，
-# 而 models.dev 目录已不兼容旧 tag，因此 ai 包走 build:offline）
-cd packages/chord && npm run build && cd ../tui && npm run build
-cd ../telemetry && npm run build && cd ../ai && npm run build:offline && cd ../..
-cd packages/agent && npm run build && cd ../session-backends/sqlite-node && npm run build
-cd ../../protocol && npm run build && cd ../client && npm run build && cd ../server && npm run build
-cd ../coding-agent && npm run build
+npm ci --ignore-scripts
+npm run build:zh
 
 # 产物在 packages/coding-agent/dist/bundle/cli.js
-# 建议包一层命令，避免与官方安装的 pi 冲突：
-mkdir -p ~/.local/bin && cat > ~/.local/bin/pi-zh << 'EOF'
-#!/bin/zsh
-exec node "/绝对路径/pi-zh/packages/coding-agent/dist/bundle/cli.js" "$@"
-EOF
-chmod +x ~/.local/bin/pi-zh
+node packages/coding-agent/dist/bundle/cli.js
+node packages/coding-agent/dist/bundle/cli.js --lang en
 ```
 
-**在 Cursor / VS Code 中使用**：安装 [pi0.pi-vscode](https://github.com/pithings/pi-vscode) 扩展，在设置中加入：
+需要 Node.js `22.19.0` 或更高版本。首次安装依赖需要联网；`build:zh` 使用仓库内经过校验的模型数据快照，不访问在线模型目录。快照缺失、损坏或版本不匹配时会直接失败。
+
+macOS/Linux 可用 shell 脚本包装上述 `node` 命令；Windows 可创建 `.cmd` 文件：
+
+```bat
+@echo off
+node "C:\绝对路径\pi-cn\packages\coding-agent\dist\bundle\cli.js" %*
+```
+
+**在 Cursor / VS Code 中使用**：安装 [pi0.pi-vscode](https://github.com/pithings/pi-vscode) 扩展，并把 `pi-vscode.path` 指向包装脚本或构建产物：
 
 ```json
 { "pi-vscode.path": "/Users/<你>/.local/bin/pi-zh" }
 ```
 
-之后用扩展的 "Pi: Open" 启动的就是中文界面，编辑器桥接（选中内容感知等）不受影响。**注意不要点扩展里的 "Pi: Upgrade Pi and Packages"**，它会把官方英文版装回全局。
+之后用扩展的 “Pi: Open” 启动本 Fork。扩展的升级命令安装的是官方版本，不会更新此源码工作区。
 
 **跟进上游更新**：
 
 ```bash
 git remote add upstream https://github.com/earendil-works/pi
-git fetch upstream && git merge v0.85.x   # 换成目标版本 tag
-# 解决冲突后重新构建；文案翻译是源码级补丁，冲突可解
+git fetch upstream
+# 对比并合入目标上游版本后，按 localization/README.md 更新文案和快照
 ```
 
-已知问题：上游 pre-commit 钩子会全仓类型检查，在旧 tag 上可能因 models.dev 数据漂移报错（与汉化改动无关），可 `git commit --no-verify` 跳过。
+后续汉化维护流程见 [localization/README.md](localization/README.md)。
 
 ## 参与贡献
 
@@ -117,8 +119,9 @@ git fetch upstream && git merge v0.85.x   # 换成目标版本 tag
 
 ```bash
 npm install --ignore-scripts  # 安装全部依赖，不执行生命周期脚本
-npm run build         # 刷新模型数据，然后构建所有包
-npm run build:offline # 使用现有模型数据离线重建
+npm run build:zh      # 恢复并校验 Fork 快照，然后离线构建全部包
+npm run prepare:zh    # 只恢复并校验模型数据快照
+npm run build         # 刷新在线模型数据，然后构建所有包（上游开发流程）
 npm run check         # Lint、格式化与类型检查
 ./test.sh            # 运行测试（无 API key 时跳过依赖 LLM 的测试）
 ./pi-test.sh         # 从源码运行 pi（可在任意目录执行）

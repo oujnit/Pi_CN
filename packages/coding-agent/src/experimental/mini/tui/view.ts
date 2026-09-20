@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * The view. It holds no live objects: no harness, lane, session, or model runtime.
  *
@@ -407,7 +408,7 @@ function runLogin(
 			if (notice.type === "auth_url") dialog.showAuth(notice.url, notice.instructions);
 			else if (notice.type === "device_code") {
 				dialog.showDeviceCode(notice);
-				dialog.showWaiting("等待认证中...");
+				dialog.showWaiting(t("view.waiting_for_authentication"));
 			} else if (notice.type === "info") dialog.showInfo(notice.message, notice.links);
 			else dialog.showProgress(notice.message);
 		},

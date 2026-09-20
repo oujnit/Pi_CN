@@ -1,4 +1,5 @@
 import { Container, type SelectItem, SelectList, type SelectListLayoutOptions } from "@earendil-works/pi-tui";
+import { t } from "../../../i18n/index.ts";
 import { getSelectListTheme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 
@@ -17,8 +18,24 @@ export class ShowImagesSelectorComponent extends Container {
 		super();
 
 		const items: SelectItem[] = [
-			{ value: "yes", label: "是", description: "在终端中内联显示图片" },
-			{ value: "no", label: "否", description: "改为显示文本占位符" },
+			{
+				value: "yes",
+				get label() {
+					return t("show_images_selector.yes");
+				},
+				get description() {
+					return t("show_images_selector.show_images_inline_in_terminal");
+				},
+			},
+			{
+				value: "no",
+				get label() {
+					return t("show_images_selector.no");
+				},
+				get description() {
+					return t("show_images_selector.show_text_placeholder_instead");
+				},
+			},
 		];
 
 		// Add top border

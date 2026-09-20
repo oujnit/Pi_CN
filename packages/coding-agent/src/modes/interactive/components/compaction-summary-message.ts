@@ -1,5 +1,6 @@
 import { Box, Container, Markdown, type MarkdownTheme, MouseRegion, Spacer, Text } from "@earendil-works/pi-tui";
 import type { CompactionSummaryMessage } from "../../../core/messages.ts";
+import { t } from "../../../i18n/index.ts";
 import { getMarkdownTheme, theme } from "../theme/theme.ts";
 import { keyText } from "./keybinding-hints.ts";
 
@@ -34,7 +35,7 @@ export class CompactionSummaryMessageComponent extends Box {
 		const content = new Container();
 
 		const tokenStr = this.message.tokensBefore.toLocaleString();
-		const label = theme.fg("customMessageLabel", `\x1b[1m[压缩]\x1b[22m`);
+		const label = theme.fg("customMessageLabel", t("compaction_summary_message.m_compaction_m"));
 		content.addChild(new Text(label, 0, 0));
 		content.addChild(new Spacer(1));
 

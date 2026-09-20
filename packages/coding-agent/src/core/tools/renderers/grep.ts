@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Presentation for the grep tool.
  *
@@ -28,9 +29,9 @@ function formatGrepCall(
 		theme.fg("toolTitle", theme.bold("grep")) +
 		" " +
 		(pattern === null ? invalidArg : theme.fg("accent", `/${pattern || ""}/`)) +
-		theme.fg("toolOutput", ` 在 ${path === null ? invalidArg : path}`);
+		theme.fg("toolOutput", t("grep.in_p", { p0: String(path === null ? invalidArg : path) }));
 	if (glob) text += theme.fg("toolOutput", ` (${glob})`);
-	if (limit !== undefined) text += theme.fg("toolOutput", ` 上限 ${limit}`);
+	if (limit !== undefined) text += theme.fg("toolOutput", t("grep.limit_p", { p0: String(limit) }));
 	return text;
 }
 function formatGrepResult(
@@ -51,7 +52,7 @@ function formatGrepResult(
 		const remaining = lines.length - maxLines;
 		text += `\n${displayLines.map((line) => theme.fg("toolOutput", line)).join("\n")}`;
 		if (remaining > 0) {
-			text += `${theme.fg("muted", `\n...（还有 ${remaining} 行，`)} ${keyHint("app.tools.expand", "按此展开")}${theme.fg("muted", "）")}`;
+			text += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
 		}
 	}
 
@@ -60,10 +61,11 @@ function formatGrepResult(
 	const linesTruncated = result.details?.linesTruncated;
 	if (matchLimit || truncation?.truncated || linesTruncated) {
 		const warnings: string[] = [];
-		if (matchLimit) warnings.push(`匹配数上限 ${matchLimit}`);
-		if (truncation?.truncated) warnings.push(`大小上限 ${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)}`);
-		if (linesTruncated) warnings.push("部分行已截断");
-		text += `\n${theme.fg("warning", `[已截断：${warnings.join("，")}]`)}`;
+		if (matchLimit) warnings.push(t("grep.p_matches_limit", { p0: String(matchLimit) }));
+		if (truncation?.truncated)
+			warnings.push(t("grep.p_limit", { p0: String(formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)) }));
+		if (linesTruncated) warnings.push(t("grep.some_lines_truncated"));
+		text += `\n${theme.fg("warning", `[Truncated: ${warnings.join(", ")}]`)}`;
 	}
 	return text;
 }

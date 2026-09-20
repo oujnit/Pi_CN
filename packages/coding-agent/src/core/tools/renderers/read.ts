@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Presentation for the read tool.
  *
@@ -90,10 +91,10 @@ function formatCompactReadCall(
 	args: ReadRenderArgs | undefined,
 	theme: Theme,
 ): string {
-	const expandHint = theme.fg("dim", `（${keyText("app.tools.expand")} 展开）`);
+	const expandHint = theme.fg("dim", t("read.p_to_expand", { p0: String(keyText("app.tools.expand")) }));
 	if (classification.kind === "skill") {
 		return (
-			theme.fg("customMessageLabel", `\x1b[1m[技能]\x1b[22m `) +
+			theme.fg("customMessageLabel", t("read.m_skill_m")) +
 			theme.fg("customMessageText", classification.label) +
 			formatReadLineRange(args, theme) +
 			expandHint
@@ -101,7 +102,7 @@ function formatCompactReadCall(
 	}
 
 	return (
-		theme.fg("toolTitle", theme.bold(`read ${classification.kind === "docs" ? "文档" : "资源"}`)) +
+		theme.fg("toolTitle", theme.bold(`read ${classification.kind}`)) +
 		" " +
 		theme.fg("accent", classification.label) +
 		formatReadLineRange(args, theme) +
@@ -131,17 +132,17 @@ function formatReadResult(
 	const remaining = lines.length - maxLines;
 	let text = `\n${displayLines.map((line) => (lang ? replaceTabs(line) : theme.fg("toolOutput", replaceTabs(line)))).join("\n")}`;
 	if (remaining > 0) {
-		text += `${theme.fg("muted", `\n...（还有 ${remaining} 行，`)} ${keyHint("app.tools.expand", "按此展开")}${theme.fg("muted", "）")}`;
+		text += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
 	}
 
 	const truncation = result.details?.truncation;
 	if (truncation?.truncated) {
 		if (truncation.firstLineExceedsLimit) {
-			text += `\n${theme.fg("warning", `[首行超过 ${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)} 上限]`)}`;
+			text += `\n${theme.fg("warning", `[First line exceeds ${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)} limit]`)}`;
 		} else if (truncation.truncatedBy === "lines") {
-			text += `\n${theme.fg("warning", `[已截断：显示 ${truncation.outputLines}/${truncation.totalLines} 行（行数上限 ${truncation.maxLines ?? DEFAULT_MAX_LINES}）]`)}`;
+			text += `\n${theme.fg("warning", `[Truncated: showing ${truncation.outputLines} of ${truncation.totalLines} lines (${truncation.maxLines ?? DEFAULT_MAX_LINES} line limit)]`)}`;
 		} else {
-			text += `\n${theme.fg("warning", `[已截断：显示 ${truncation.outputLines} 行（大小上限 ${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)}）]`)}`;
+			text += `\n${theme.fg("warning", `[Truncated: ${truncation.outputLines} lines shown (${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)} limit)]`)}`;
 		}
 	}
 	return text;

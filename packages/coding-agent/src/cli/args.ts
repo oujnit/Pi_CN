@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.ts";
 /**
  * CLI argument parsing and help display
  */
@@ -11,6 +12,7 @@ import type { TuiMode } from "../core/settings-manager.ts";
 export type Mode = "text" | "json" | "rpc";
 
 export interface Args {
+	language?: string;
 	provider?: string;
 	model?: string;
 	apiKey?: string;
@@ -68,6 +70,30 @@ export function normalizeSessionName(value: string): string | undefined {
 	return name.length > 0 ? name : undefined;
 }
 
+export function extractLanguageArgs(args: readonly string[]): { args: string[]; language: string | undefined } {
+	const filtered: string[] = [];
+	let language: string | undefined;
+	for (let index = 0; index < args.length; index++) {
+		const argument = args[index];
+		if (argument === "--") {
+			filtered.push(...args.slice(index));
+			break;
+		}
+		if (argument.startsWith("--lang=")) {
+			language = argument.slice("--lang=".length);
+			continue;
+		}
+		if (argument === "--lang") {
+			const value = args[index + 1];
+			language = value === undefined || value.startsWith("-") ? "" : value;
+			if (value !== undefined && !value.startsWith("-")) index++;
+			continue;
+		}
+		filtered.push(argument);
+	}
+	return { args: filtered, language };
+}
+
 export function parseArgs(args: string[]): Args {
 	const result: Args = {
 		messages: [],
@@ -101,6 +127,9 @@ export function parseArgs(args: string[]): Args {
 			result.continue = true;
 		} else if (arg === "--resume" || arg === "-r") {
 			result.resume = true;
+		} else if (arg === "--lang" || arg.startsWith("--lang=")) {
+			const value = arg.startsWith("--lang=") ? arg.slice(7) : args[++i];
+			result.language = value ?? "";
 		} else if (arg === "--provider" && i + 1 < args.length) {
 			result.provider = args[++i];
 		} else if (arg === "--model" && i + 1 < args.length) {
@@ -116,7 +145,7 @@ export function parseArgs(args: string[]): Args {
 			if (i + 1 < args.length) {
 				result.name = args[++i];
 			} else {
-				result.diagnostics.push({ type: "error", message: "--name 需要一个值" });
+				result.diagnostics.push({ type: "error", message: "--name requires a value" });
 			}
 		} else if (arg === "--no-session") {
 			result.noSession = true;
@@ -151,7 +180,7 @@ export function parseArgs(args: string[]): Args {
 			} else {
 				result.diagnostics.push({
 					type: "warning",
-					message: `思考级别 "${level}" 无效。有效值：${VALID_THINKING_LEVELS.join(", ")}`,
+					message: `Invalid thinking level "${level}". Valid values: ${VALID_THINKING_LEVELS.join(", ")}`,
 				});
 			}
 		} else if (arg === "--print" || arg === "-p") {
@@ -180,7 +209,7 @@ export function parseArgs(args: string[]): Args {
 		} else if (arg === "--use-theme") {
 			const themeName = args[i + 1];
 			if (themeName === undefined || themeName.startsWith("-")) {
-				result.diagnostics.push({ type: "error", message: "--use-theme 需要一个主题名称" });
+				result.diagnostics.push({ type: "error", message: "--use-theme requires a theme name" });
 			} else {
 				result.useTheme = themeName;
 				i++;
@@ -206,12 +235,12 @@ export function parseArgs(args: string[]): Args {
 				result.tuiMode = mode;
 				i++;
 			} else if (mode === undefined || mode.startsWith("-")) {
-				result.diagnostics.push({ type: "error", message: "--tui-mode 需要 regular 或 fullscreen" });
+				result.diagnostics.push({ type: "error", message: "--tui-mode requires regular or fullscreen" });
 			} else {
 				i++;
 				result.diagnostics.push({
 					type: "error",
-					message: `TUI 模式 "${mode}" 无效。有效值：regular, fullscreen`,
+					message: `Invalid TUI mode "${mode}". Valid values: regular, fullscreen`,
 				});
 			}
 		} else if (arg === "--verbose") {
@@ -239,7 +268,7 @@ export function parseArgs(args: string[]): Args {
 				}
 			}
 		} else if (arg.startsWith("-") && !arg.startsWith("--")) {
-			result.diagnostics.push({ type: "error", message: `未知选项：${arg}` });
+			result.diagnostics.push({ type: "error", message: `Unknown option: ${arg}` });
 		} else if (!arg.startsWith("-")) {
 			result.messages.push(arg);
 		}
@@ -251,197 +280,61 @@ export function parseArgs(args: string[]): Args {
 export function printHelp(extensionFlags?: ExtensionFlag[]): void {
 	const extensionFlagsText =
 		extensionFlags && extensionFlags.length > 0
-			? `\n${chalk.bold("扩展 CLI flag：")}\n${extensionFlags
-					.map((flag) => {
-						const value = flag.type === "string" ? " <value>" : "";
-						const description = flag.description ?? `由 ${flag.extensionPath} 注册`;
-						return `  --${flag.name}${value}`.padEnd(30) + description;
-					})
-					.join("\n")}\n`
+			? `
+${chalk.bold(t("args.extension_cli_flags"))}
+${extensionFlags
+	.map((flag) => {
+		const value = flag.type === "string" ? " <value>" : "";
+		const description = flag.description ?? t("args.registered_by_p", { p0: String(flag.extensionPath) });
+		return `  --${flag.name}${value}`.padEnd(30) + description;
+	})
+	.join("\n")}
+`
 			: "";
-	console.log(`${chalk.bold(APP_NAME)} - AI 编程助手，内置 read、bash、edit、write 工具
-
-${chalk.bold("用法：")}
-  ${APP_NAME} [options] [--] [@files...] [messages...]
-
-${chalk.bold("命令：")}
-  ${APP_NAME} install <source> [-l]     安装扩展来源并添加到设置
-  ${APP_NAME} remove <source> [-l]      从设置中移除扩展来源
-  ${APP_NAME} uninstall <source> [-l]   remove 的别名
-  ${APP_NAME} update [source|self|pi]   更新 pi、扩展或模型目录
-  ${APP_NAME} list                      列出设置中已安装的扩展
-  ${APP_NAME} config [-l]               打开 TUI 启用/禁用包资源（Tab 切换范围）
-  ${APP_NAME} auth <command>            打印凭据或检查供应商就绪状态
-  ${APP_NAME} <command> --help          显示 install/remove/uninstall/update/list/config/auth 的帮助
-
-${chalk.bold("选项：")}
-  --provider <name>              供应商名称（默认：google）
-  --model <pattern>              模型模式或 ID（支持 "provider/id" 和可选的 ":<thinking>"）
-  --api-key <key>                API 密钥（默认取自环境变量）
-  --system-prompt <text>         系统提示词（默认：编程助手提示词）
-  --append-system-prompt <text>  向系统提示词追加文本或文件内容（可多次使用）
-  --mode <mode>                  输出模式：text（默认）、json 或 rpc
-  --print, -p                    非交互模式：处理提示后退出
-  --continue, -c                 继续上一次会话
-  --resume, -r                   选择一个要恢复的会话
-  --session <path|id>            使用指定的会话文件或部分 UUID
-  --session-id <id>              使用精确的项目会话 ID，不存在则创建
-  --fork <path|id>               将指定会话文件或部分 UUID 派生为新会话
-  --session-dir <dir>            会话存储与查找目录
-  --no-session                   不保存会话（临时会话）
-  --name, -n <name>              设置会话显示名称
-  --models <patterns>            逗号分隔的模型模式，用于 Ctrl+P 轮换
-                                 支持通配符（anthropic/*、*sonnet*）和模糊匹配
-  --no-tools, -nt                默认禁用所有工具（内置和扩展）
-  --no-builtin-tools, -nbt       默认禁用内置工具，但保留扩展/自定义工具
-  --tools, -t <tools>            逗号分隔的工具名允许列表
-                                 适用于内置、扩展和自定义工具
-  --exclude-tools, -xt <tools>   逗号分隔的工具名禁用列表
-                                 适用于内置、扩展和自定义工具
-  --thinking <level>             设置思考级别：off、minimal、low、medium、high、xhigh、max
-  --extension, -e <path>         加载一个扩展文件（可多次使用）
-  --no-extensions, -ne           禁用扩展发现（显式指定的 -e 路径仍然有效）
-  --skill <path>                 加载技能文件或目录（可多次使用）
-  --no-skills, -ns               禁用技能发现与加载
-  --prompt-template <path>       加载提示词模板文件或目录（可多次使用）
-  --no-prompt-templates, -np     禁用提示词模板发现与加载
-  --theme <path>                 加载主题文件或目录（可多次使用）
-  --use-theme <name[/name]>      设置本次运行使用的初始交互主题
-  --no-themes                    禁用主题发现与加载
-  --no-context-files, -nc        禁用 AGENTS.md 和 CLAUDE.md 的发现与加载
-  --export <file>                将会话文件导出为 HTML 后退出
-  --list-models [search]         列出可用模型（可选模糊搜索）
-  --verbose                      强制详细启动（覆盖 quietStartup 设置）
-  --tui-mode <mode>              TUI 模式：regular（默认）或 fullscreen
-  --approve, -a                  本次运行信任项目本地文件
-  --no-approve, -na              本次运行忽略项目本地文件
-  --offline                      禁用启动时的网络操作（等同于 PI_OFFLINE=1）
-  --                             结束选项解析；其余参数视为消息/文件
-  --help, -h                     显示此帮助
-  --version, -v                  显示版本号
-
-扩展可以注册额外的 flag（例如来自 plan-mode 扩展的 --plan）。${extensionFlagsText}
-
-${chalk.bold("示例：")}
-  # 为外部客户端打印供应商 API 密钥
-  ${APP_NAME} auth print-api-key --provider openai
-
-  # 为外部客户端打印 OAuth bearer token（过期会自动刷新）
-  ${APP_NAME} auth print-bearer-token --provider openai-codex
-
-  # 交互模式
-  ${APP_NAME}
-
-  # 带初始提示的交互模式
-  ${APP_NAME} "列出 src/ 下的所有 .ts 文件"
-
-  # 在初始消息中附带文件
-  ${APP_NAME} @prompt.md @image.png "天空是什么颜色？"
-
-  # 非交互模式（处理后退出）
-  ${APP_NAME} -p "列出 src/ 下的所有 .ts 文件"
-
-  # 以短横线开头的提示
-  ${APP_NAME} -p -- "- 总结这些要点"
-
-  # 多条消息（交互模式）
-  ${APP_NAME} "读一下 package.json" "我们有哪些依赖？"
-
-  # 继续上一次会话
-  ${APP_NAME} --continue "我们刚才聊了什么？"
-
-  # 启动命名会话
-  ${APP_NAME} --name "重构认证模块"
-
-  # 使用其他模型
-  ${APP_NAME} --provider openai --model gpt-4o-mini "帮我重构这段代码"
-
-  # 使用带供应商前缀的模型（无需 --provider）
-  ${APP_NAME} --model openai/gpt-4o "帮我重构这段代码"
-
-  # 使用模型的思考级别简写
-  ${APP_NAME} --model sonnet:high "解决这个复杂问题"
-
-  # 将模型轮换限制在指定模型
-  ${APP_NAME} --models claude-sonnet,claude-haiku,gpt-4o
-
-  # 用通配符限定特定供应商
-  ${APP_NAME} --models "github-copilot/*"
-
-  # 以固定思考级别轮换模型
-  ${APP_NAME} --models sonnet:high,haiku:low
-
-  # 以指定思考级别启动
-  ${APP_NAME} --thinking high "解决这个复杂问题"
-
-  # 只读模式（不会修改文件）
-  ${APP_NAME} --tools read,grep,find,ls -p "审查 src/ 中的代码"
-
-  # 禁用单个工具，其余保持可用
-  ${APP_NAME} --exclude-tools ask_question
-
-  # 将会话文件导出为 HTML
-  ${APP_NAME} --export ~/${CONFIG_DIR_NAME}/agent/sessions/--path--/session.jsonl
-  ${APP_NAME} --export session.jsonl output.html
-
-${chalk.bold("环境变量：")}
-  ANTHROPIC_AUTH_TOKEN             - Anthropic bearer 认证令牌
-  ANTHROPIC_API_KEY                - Anthropic Claude API 密钥
-  ANTHROPIC_OAUTH_TOKEN            - Anthropic OAuth token（可替代 API 密钥）
-  ANT_LING_API_KEY                 - Ant Ling API 密钥
-  OPENAI_API_KEY                   - OpenAI GPT API 密钥
-  AZURE_OPENAI_API_KEY             - Azure OpenAI API 密钥
-  AZURE_OPENAI_BASE_URL            - Azure OpenAI/Cognitive Services 基础 URL（例如 https://{resource}.openai.azure.com）
-  AZURE_OPENAI_RESOURCE_NAME       - Azure OpenAI 资源名（可替代基础 URL）
-  AZURE_OPENAI_API_VERSION         - Azure OpenAI API 版本（默认：v1）
-  AZURE_OPENAI_DEPLOYMENT_NAME_MAP - Azure OpenAI 的 model=deployment 映射（逗号分隔）
-  DEEPSEEK_API_KEY                 - DeepSeek API 密钥
-  NVIDIA_API_KEY                   - NVIDIA NIM API 密钥
-  GEMINI_API_KEY                   - Google Gemini API 密钥
-  GROQ_API_KEY                     - Groq API 密钥
-  CEREBRAS_API_KEY                 - Cerebras API 密钥
-  XAI_API_KEY                      - xAI Grok API 密钥
-  FIREWORKS_API_KEY                - Fireworks API 密钥
-  TOGETHER_API_KEY                 - Together AI API 密钥
-  BASETEN_API_KEY                  - Baseten API 密钥
-  OPENROUTER_API_KEY               - OpenRouter API 密钥
-  AI_GATEWAY_API_KEY               - Vercel AI Gateway API 密钥
-  ZAI_API_KEY                      - ZAI Coding Plan API 密钥（全球）
-  ZAI_CODING_CN_API_KEY            - ZAI Coding Plan API 密钥（中国）
-  MISTRAL_API_KEY                  - Mistral API 密钥
-  MINIMAX_API_KEY                  - MiniMax API 密钥
-  MOONSHOT_API_KEY                 - Moonshot AI API 密钥
-  OPENCODE_API_KEY                 - OpenCode Zen/OpenCode Go API 密钥
-  KIMI_API_KEY                     - Kimi For Coding API 密钥
-  CLOUDFLARE_API_KEY               - Cloudflare API token（Workers AI 和 AI Gateway）
-  CLOUDFLARE_ACCOUNT_ID            - Cloudflare 账户 ID（两者都需要）
-  CLOUDFLARE_GATEWAY_ID            - Cloudflare AI Gateway 标识（AI Gateway 必需）
-  QWEN_TOKEN_PLAN_API_KEY          - Qwen Token Plan API 密钥（国际区）
-  QWEN_TOKEN_PLAN_CN_API_KEY       - Qwen Token Plan API 密钥（中国区）
-  XIAOMI_API_KEY                   - Xiaomi MiMo API 密钥（api.xiaomimimo.com 计费）
-  XIAOMI_TOKEN_PLAN_CN_API_KEY     - Xiaomi MiMo Token Plan API 密钥（中国区）
-  XIAOMI_TOKEN_PLAN_AMS_API_KEY    - Xiaomi MiMo Token Plan API 密钥（阿姆斯特丹区）
-  XIAOMI_TOKEN_PLAN_SGP_API_KEY    - Xiaomi MiMo Token Plan API 密钥（新加坡区）
-  AWS_PROFILE                      - Amazon Bedrock 使用的 AWS profile
-  AWS_ACCESS_KEY_ID                - Amazon Bedrock 使用的 AWS access key
-  AWS_SECRET_ACCESS_KEY            - Amazon Bedrock 使用的 AWS secret key
-  AWS_BEARER_TOKEN_BEDROCK         - Bedrock API 密钥（bearer token）
-  AWS_REGION                       - Amazon Bedrock 使用的 AWS 区域（例如 us-east-1）
-  ${ENV_AGENT_DIR.padEnd(32)} - 配置目录（默认：~/${CONFIG_DIR_NAME}/agent）
-  ${ENV_SESSION_DIR.padEnd(32)} - 会话存储目录（可被 --session-dir 覆盖）
-  PI_PACKAGE_DIR                   - 覆盖包目录（用于 Nix/Guix store 路径）
-  PI_OFFLINE                       - 设为 1/true/yes 时禁用启动网络操作
-  PI_TELEMETRY                     - 设为 1/true/yes 或 0/false/no 时覆盖安装遥测设置
-  PI_SHARE_VIEWER_URL              - /share 命令的基础 URL（默认：https://pi.dev/session/）
-
-${chalk.bold("内置工具名称：")}
-  read       - 读取文件内容
-  bash       - 执行 bash 命令
-  powershell - 在 Windows 上执行 PowerShell 命令
-  edit       - 通过查找/替换编辑文件
-  write      - 写入文件（创建/覆盖）
-  grep       - 搜索文件内容（只读，默认关闭）
-  find       - 按 glob 模式查找文件（只读，默认关闭）
-  ls         - 列出目录内容（只读，默认关闭）
-`);
+	console.log(
+		t("args.p_ai_coding_assistant_with_read_bash", {
+			p0: String(chalk.bold(APP_NAME)),
+			p1: String(chalk.bold(t("args.usage"))),
+			p2: String(APP_NAME),
+			p3: String(chalk.bold(t("args.commands"))),
+			p4: String(APP_NAME),
+			p5: String(APP_NAME),
+			p6: String(APP_NAME),
+			p7: String(APP_NAME),
+			p8: String(APP_NAME),
+			p9: String(APP_NAME),
+			p10: String(APP_NAME),
+			p11: String(APP_NAME),
+			p12: String(chalk.bold(t("args.options"))),
+			p13: String(extensionFlagsText),
+			p14: String(chalk.bold(t("args.examples"))),
+			p15: String(APP_NAME),
+			p16: String(APP_NAME),
+			p17: String(APP_NAME),
+			p18: String(APP_NAME),
+			p19: String(APP_NAME),
+			p20: String(APP_NAME),
+			p21: String(APP_NAME),
+			p22: String(APP_NAME),
+			p23: String(APP_NAME),
+			p24: String(APP_NAME),
+			p25: String(APP_NAME),
+			p26: String(APP_NAME),
+			p27: String(APP_NAME),
+			p28: String(APP_NAME),
+			p29: String(APP_NAME),
+			p30: String(APP_NAME),
+			p31: String(APP_NAME),
+			p32: String(APP_NAME),
+			p33: String(APP_NAME),
+			p34: String(APP_NAME),
+			p35: String(CONFIG_DIR_NAME),
+			p36: String(APP_NAME),
+			p37: String(chalk.bold(t("args.environment_variables"))),
+			p38: String(ENV_AGENT_DIR.padEnd(32)),
+			p39: String(CONFIG_DIR_NAME),
+			p40: String(ENV_SESSION_DIR.padEnd(32)),
+			p41: String(chalk.bold(t("args.built_in_tool_names"))),
+		}),
+	);
 }

@@ -1,6 +1,7 @@
 import { setKeybindings } from "@earendil-works/pi-tui";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { KeybindingsManager } from "../src/core/keybindings.ts";
+import { LanguageContext } from "../src/i18n/index.ts";
 import {
 	type SettingsCallbacks,
 	type SettingsConfig,
@@ -134,5 +135,31 @@ describe("SettingsSelectorComponent", () => {
 		output = stripAnsi(list.render(120).join("\n"));
 		expect(output).toContain("  ✓ medium");
 		expect(output).toContain("→   high");
+	});
+
+	it("switches language in place while preserving the active settings list", () => {
+		const language = new LanguageContext("zh-CN");
+		const onLanguageChange = vi.fn((value: "zh-CN" | "en") => language.setLanguage(value));
+		const config = {
+			language: "zh-CN",
+			defaultModel: "not set",
+			availableDefaultModels: [],
+			availableThinkingLevels: [],
+			modelThinkingLevels: {},
+			availableThemes: [],
+			warnings: {},
+		} as unknown as SettingsConfig;
+		const callbacks = { onLanguageChange, onCancel: () => {} } as unknown as SettingsCallbacks;
+		const list = language.run(() => new SettingsSelectorComponent(config, callbacks).getSettingsList());
+
+		for (const character of "language") list.handleInput(character);
+		expect(language.run(() => stripAnsi(list.render(80).join("\n")))).toContain("简体中文");
+		language.run(() => list.handleInput("\r"));
+		list.invalidate();
+
+		expect(onLanguageChange).toHaveBeenCalledWith("en");
+		const rendered = language.run(() => stripAnsi(list.render(80).join("\n")));
+		expect(rendered).toContain("English");
+		expect(rendered).toContain("Language used by this CLI instance");
 	});
 });

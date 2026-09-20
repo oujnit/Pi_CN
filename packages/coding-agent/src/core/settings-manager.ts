@@ -108,6 +108,7 @@ export type PackageSource =
 	  };
 
 export interface Settings {
+	language?: string;
 	lastChangelogVersion?: string;
 	defaultProvider?: string;
 	defaultModel?: string;
@@ -501,6 +502,16 @@ export class SettingsManager {
 
 	getGlobalSettings(): Settings {
 		return structuredClone(this.globalSettings);
+	}
+
+	getLanguage(): string | undefined {
+		return this.globalSettings.language;
+	}
+
+	setLanguage(language: string): void {
+		this.globalSettings.language = language;
+		this.markModified("language");
+		this.save();
 	}
 
 	getProjectSettings(): Settings {

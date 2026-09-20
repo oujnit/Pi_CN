@@ -86,7 +86,7 @@ async function runCli(args: string[]): Promise<{ stdout: string; stderr: string;
 
 describe("stdout cleanliness in non-interactive modes", () => {
 	it("prints plain --help to stdout when stdout is redirected", async () => {
-		const result = await runCli(["--help"]);
+		const result = await runCli(["--lang", "en", "--help"]);
 
 		expect(result.code).toBe(0);
 		expect(result.stdout).toContain("Usage:");
@@ -96,7 +96,7 @@ describe("stdout cleanliness in non-interactive modes", () => {
 	});
 
 	it("keeps stdout empty for --mode json --help while routing trusted startup chatter to stderr", async () => {
-		const result = await runCli(["--mode", "json", "--help", "--approve"]);
+		const result = await runCli(["--lang", "en", "--mode", "json", "--help", "--approve"]);
 
 		expect(result.code).toBe(0);
 		expect(result.stdout).toBe("");

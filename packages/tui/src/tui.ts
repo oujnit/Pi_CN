@@ -2,6 +2,7 @@
  * Minimal TUI implementation with differential rendering
  */
 
+import { AsyncResource } from "node:async_hooks";
 import { performance } from "node:perf_hooks";
 import { isKeyRelease, matchesKey } from "./keys.ts";
 import type { Terminal } from "./terminal.ts";
@@ -879,8 +880,8 @@ export abstract class TuiBase extends Container implements TUI {
 		this.stopped = false;
 		this.beforeTerminalStart();
 		this.terminal.start(
-			(data) => this.handleTerminalInput(data),
-			() => this.requestRender(),
+			AsyncResource.bind((data: string) => this.handleTerminalInput(data)),
+			AsyncResource.bind(() => this.requestRender()),
 		);
 		this.afterTerminalStart();
 		this.terminal.hideCursor();

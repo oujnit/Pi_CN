@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Component for displaying bash command execution with streaming output.
  */
@@ -177,25 +178,30 @@ export class BashExecutionComponent extends Container {
 			if (hiddenLineCount > 0) {
 				if (this.expanded) {
 					statusParts.push(
-						`${theme.fg("muted", "(")}${keyHint("app.tools.expand", "收起")}${theme.fg("muted", ")")}`,
+						`${theme.fg("muted", "(")}${keyHint("app.tools.expand", t("bash_execution.to_collapse"))}${theme.fg("muted", ")")}`,
 					);
 				} else {
 					statusParts.push(
-						`${theme.fg("muted", `... 还有 ${hiddenLineCount} 行 (`)}${keyHint("app.tools.expand", "展开")}${theme.fg("muted", ")")}`,
+						`${theme.fg("muted", t("bash_execution.p_more_lines", { p0: String(hiddenLineCount) }))}${keyHint("app.tools.expand", t("bash_execution.to_expand"))}${theme.fg("muted", ")")}`,
 					);
 				}
 			}
 
 			if (this.status === "cancelled") {
-				statusParts.push(theme.fg("warning", "(已取消)"));
+				statusParts.push(theme.fg("warning", t("bash_execution.cancelled")));
 			} else if (this.status === "error") {
-				statusParts.push(theme.fg("error", `(退出码 ${this.exitCode})`));
+				statusParts.push(theme.fg("error", t("bash_execution.exit_p", { p0: String(this.exitCode) })));
 			}
 
 			// Add truncation warning (context truncation, not preview truncation)
 			const wasTruncated = this.truncationResult?.truncated || contextTruncation.truncated;
 			if (wasTruncated && this.fullOutputPath) {
-				statusParts.push(theme.fg("warning", `输出已截断。完整输出：${this.fullOutputPath}`));
+				statusParts.push(
+					theme.fg(
+						"warning",
+						t("bash_execution.output_truncated_full_output_p", { p0: String(this.fullOutputPath) }),
+					),
+				);
 			}
 
 			if (statusParts.length > 0) {

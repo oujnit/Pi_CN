@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Multi-line editor component for extensions.
  * Supports Ctrl+G for external editor.
@@ -18,6 +19,10 @@ import { editInExternalEditor } from "../external-editor.ts";
 import { getEditorTheme, theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 import { keyHint } from "./keybinding-hints.ts";
+
+export interface ExtensionEditorOptions extends EditorOptions {
+	description?: string;
+}
 
 export class ExtensionEditorComponent extends Container implements Focusable {
 	private editor: Editor;
@@ -43,7 +48,7 @@ export class ExtensionEditorComponent extends Container implements Focusable {
 		prefill: string | undefined,
 		onSubmit: (value: string) => void,
 		onCancel: () => void,
-		options?: EditorOptions,
+		options?: ExtensionEditorOptions,
 		externalEditorCommand?: string,
 	) {
 		super();
@@ -57,17 +62,22 @@ export class ExtensionEditorComponent extends Container implements Focusable {
 			(process.platform === "win32" ? "notepad" : "nano");
 		this.onSubmitCallback = onSubmit;
 		this.onCancelCallback = onCancel;
+		const { description, ...editorOptions } = options ?? {};
 
 		// Add top border
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));
 
-		// Add title
+		// Add title and optional description
 		this.addChild(new Text(theme.fg("accent", title), 1, 0));
+		if (description) {
+			this.addChild(new Spacer(1));
+			this.addChild(new Text(theme.fg("text", description), 1, 0));
+		}
 		this.addChild(new Spacer(1));
 
 		// Create editor
-		this.editor = new Editor(tui, getEditorTheme(), options);
+		this.editor = new Editor(tui, getEditorTheme(), editorOptions);
 		if (prefill) {
 			this.editor.setText(prefill);
 		}
@@ -81,12 +91,12 @@ export class ExtensionEditorComponent extends Container implements Focusable {
 
 		// Add hint
 		const hint =
-			keyHint("tui.select.confirm", "提交") +
+			keyHint("tui.select.confirm", t("extension_editor.submit")) +
 			"  " +
-			keyHint("tui.input.newLine", "换行") +
+			keyHint("tui.input.newLine", t("extension_editor.newline")) +
 			"  " +
-			keyHint("tui.select.cancel", "取消") +
-			`  ${keyHint("app.editor.external", "外部编辑器")}`;
+			keyHint("tui.select.cancel", t("extension_editor.cancel")) +
+			`  ${keyHint("app.editor.external", "external editor")}`;
 		this.addChild(new Text(hint, 1, 0));
 
 		this.addChild(new Spacer(1));

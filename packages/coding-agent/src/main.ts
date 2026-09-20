@@ -1,3 +1,4 @@
+import { LanguageContext, resolveLanguage, t } from "./i18n/index.ts";
 /**
  * Main entry point for the coding agent CLI.
  *
@@ -9,7 +10,7 @@ import { createInterface } from "node:readline";
 import { type ImageContent, modelsAreEqual } from "@earendil-works/pi-ai";
 import { setCapabilityOverrides } from "@earendil-works/pi-tui";
 import chalk from "chalk";
-import { type Args, type Mode, normalizeSessionName, parseArgs, printHelp } from "./cli/args.ts";
+import { type Args, extractLanguageArgs, type Mode, normalizeSessionName, parseArgs, printHelp } from "./cli/args.ts";
 import {
 	type AuthCheckResult,
 	checkProviderAuth,
@@ -70,7 +71,7 @@ import { cleanupManagedInstall, handleConfigCommand, handlePackageCommand } from
 import { isLocalPath, normalizePath, resolvePath } from "./utils/paths.ts";
 import { cleanupWindowsSelfUpdateQuarantine } from "./utils/windows-self-update.ts";
 
-const EXTENSION_LOAD_FAILURE_HINT = `提示：使用 "${APP_NAME} -ne" 可在不加载扩展的情况下启动。`;
+const extensionLoadFailureHint = () => t("main.hint_start_without_extensions_using_p_ne", { p0: String(APP_NAME) });
 
 /**
  * Read all content from piped stdin.
@@ -98,7 +99,8 @@ async function readPipedStdin(): Promise<string | undefined> {
 function reportDiagnostics(diagnostics: readonly AgentSessionRuntimeDiagnostic[]): void {
 	for (const diagnostic of diagnostics) {
 		const color = diagnostic.type === "error" ? chalk.red : diagnostic.type === "warning" ? chalk.yellow : chalk.dim;
-		const prefix = diagnostic.type === "error" ? "错误：" : diagnostic.type === "warning" ? "警告：" : "";
+		const prefix =
+			diagnostic.type === "error" ? t("main.error") : diagnostic.type === "warning" ? t("main.warning") : "";
 		console.error(color(`${prefix}${diagnostic.message}`));
 	}
 }
@@ -139,7 +141,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 	try {
 		command = parseAuthCommand(args);
 	} catch (error) {
-		const message = error instanceof AuthCommandError ? error.message : "解析 auth 命令失败";
+		const message = error instanceof AuthCommandError ? error.message : t("main.failed_to_parse_auth_command");
 		console.error(chalk.red(`Error: ${message}`));
 		process.exitCode = 1;
 		return true;
@@ -149,8 +151,10 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 	const parsed = parseArgs(command.args);
 	if (parsed.unknownFlags.size > 0) {
 		const option = parsed.unknownFlags.keys().next().value;
-		console.error(chalk.red(`命令 "${getAuthCommandName(command.kind)}" 存在未知选项 --${option}。`));
-		console.error(chalk.dim(`请使用 "${APP_NAME} --help" 或 "${getAuthCommandUsage(command.kind)}"。`));
+		console.error(chalk.red(`Unknown option --${option} for "${getAuthCommandName(command.kind)}".`));
+		console.error(
+			chalk.dim(t("main.use_p_help_or_p", { p0: String(APP_NAME), p1: String(getAuthCommandUsage(command.kind)) })),
+		);
 		process.exitCode = 1;
 		return true;
 	}
@@ -200,7 +204,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 		process.stdout.write(`${output}\n`);
 		process.exitCode = result.status === "ready" ? 0 : result.status === "not_ready" ? 1 : 2;
 	} catch (error) {
-		const message = error instanceof AuthCommandError ? error.message : "解析凭据失败";
+		const message = error instanceof AuthCommandError ? error.message : t("main.failed_to_resolve_credential");
 		console.error(chalk.red(`Error: ${message}`));
 		process.exitCode = command.kind === "check" ? 2 : 1;
 	}
@@ -306,7 +310,9 @@ function validateForkFlags(parsed: Args): void {
 	].filter((flag): flag is string => flag !== undefined);
 
 	if (conflictingFlags.length > 0) {
-		console.error(chalk.red(`错误：--fork 不能与 ${conflictingFlags.join(", ")} 同时使用`));
+		console.error(
+			chalk.red(t("main.error_fork_cannot_be_combined_with_p", { p0: String(conflictingFlags.join(", ")) })),
+		);
 		process.exit(1);
 	}
 }
@@ -321,7 +327,9 @@ function validateSessionIdFlags(parsed: Args): void {
 	].filter((flag): flag is string => flag !== undefined);
 
 	if (conflictingFlags.length > 0) {
-		console.error(chalk.red(`错误：--session-id 不能与 ${conflictingFlags.join(", ")} 同时使用`));
+		console.error(
+			chalk.red(t("main.error_session_id_cannot_be_combined_with", { p0: String(conflictingFlags.join(", ")) })),
+		);
 		process.exit(1);
 	}
 
@@ -368,7 +376,7 @@ export async function createSessionManager(
 		if (parsed.sessionId) {
 			const existingTarget = findLocalSessionByExactId(parsed.sessionId, cwd, sessionDir);
 			if (existingTarget) {
-				console.error(chalk.red(`已存在 id 为 '${parsed.sessionId}' 的会话`));
+				console.error(chalk.red(t("main.session_already_exists_with_id_p", { p0: String(parsed.sessionId) })));
 				process.exit(1);
 			}
 		}
@@ -382,7 +390,7 @@ export async function createSessionManager(
 				return forkSessionOrExit(resolved.path, cwd, sessionDir, parsed.sessionId);
 
 			case "not_found":
-				console.error(chalk.red(`未找到匹配 '${resolved.arg}' 的会话`));
+				console.error(chalk.red(t("main.no_session_found_matching_p", { p0: String(resolved.arg) })));
 				process.exit(1);
 		}
 	}
@@ -396,17 +404,17 @@ export async function createSessionManager(
 				return openSessionOrExit(resolved.path, sessionDir);
 
 			case "global": {
-				console.log(chalk.yellow(`会话位于其他项目中：${resolved.cwd}`));
-				const shouldFork = await promptConfirm("是否将该会话派生到当前目录？");
+				console.log(chalk.yellow(t("main.session_found_in_different_project_p", { p0: String(resolved.cwd) })));
+				const shouldFork = await promptConfirm(t("main.fork_this_session_into_current_directory"));
 				if (!shouldFork) {
-					console.log(chalk.dim("已中止。"));
+					console.log(chalk.dim(t("main.aborted")));
 					process.exit(0);
 				}
 				return forkSessionOrExit(resolved.path, cwd, sessionDir);
 			}
 
 			case "not_found":
-				console.error(chalk.red(`未找到匹配 '${resolved.arg}' 的会话`));
+				console.error(chalk.red(t("main.no_session_found_matching_p", { p0: String(resolved.arg) })));
 				process.exit(1);
 		}
 	}
@@ -419,7 +427,7 @@ export async function createSessionManager(
 				settingsManager,
 			);
 			if (!selectedPath) {
-				console.log(chalk.dim("未选择会话"));
+				console.log(chalk.dim(t("main.no_session_selected")));
 				process.exit(0);
 			}
 			return SessionManager.open(selectedPath, sessionDir);
@@ -437,7 +445,7 @@ export async function createSessionManager(
 		if (existingSession) {
 			return SessionManager.open(existingSession.path, sessionDir);
 		}
-		console.error(chalk.yellow(`警告：未找到 id 为 '${parsed.sessionId}' 的项目会话；将创建使用该 id 的新会话。`));
+		console.error(chalk.yellow(t("main.warning_no_project_session_found_with_id", { p0: String(parsed.sessionId) })));
 	}
 
 	return SessionManager.create(cwd, sessionDir, { id: parsed.sessionId });
@@ -550,8 +558,18 @@ async function promptForMissingSessionCwd(
 	settingsManager: SettingsManager,
 ): Promise<string | undefined> {
 	return showStartupSelector(settingsManager, formatMissingSessionCwdPrompt(issue), [
-		{ label: "继续", value: issue.fallbackCwd },
-		{ label: "取消", value: undefined },
+		{
+			get label() {
+				return t("main.continue");
+			},
+			value: issue.fallbackCwd,
+		},
+		{
+			get label() {
+				return t("main.cancel");
+			},
+			value: undefined,
+		},
 	]);
 }
 
@@ -559,8 +577,32 @@ export interface MainOptions {
 	extensionFactories?: InlineExtension[];
 }
 
-export async function main(args: string[], options?: MainOptions) {
+export async function main(args: string[], options?: MainOptions): Promise<void> {
+	const extracted = extractLanguageArgs(args);
+	const cwd = process.cwd();
+	const agentDir = getAgentDir();
+	const bootstrapSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
+	let resolved: ReturnType<typeof resolveLanguage>;
+	try {
+		resolved = resolveLanguage(extracted.language, process.env.PI_LANG, bootstrapSettingsManager.getLanguage());
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : String(error));
+		process.exitCode = 1;
+		return;
+	}
+	for (const warning of resolved.warnings) console.error(warning);
+	const context = new LanguageContext(resolved.language);
+	await context.run(() => runMain(extracted.args, options, bootstrapSettingsManager));
+}
+
+async function runMain(
+	args: string[],
+	options: MainOptions | undefined,
+	bootstrapSettingsManager: SettingsManager,
+): Promise<void> {
 	resetTimings();
+	const cwd = process.cwd();
+	const agentDir = getAgentDir();
 	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];
 	const offlineMode = args.includes("--offline") || isTruthyEnvFlag(process.env.PI_OFFLINE);
 	if (offlineMode) {
@@ -577,9 +619,6 @@ export async function main(args: string[], options?: MainOptions) {
 	}
 	cleanupManagedInstall();
 
-	const cwd = process.cwd();
-	const agentDir = getAgentDir();
-	const bootstrapSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
 	applyHttpProxySettings(bootstrapSettingsManager.getGlobalSettings().httpProxy);
 	configureHttpDispatcher();
 
@@ -604,7 +643,14 @@ export async function main(args: string[], options?: MainOptions) {
 	if (parsed.diagnostics.length > 0) {
 		for (const d of parsed.diagnostics) {
 			const color = d.type === "error" ? chalk.red : chalk.yellow;
-			console.error(color(`${d.type === "error" ? "错误" : "警告"}：${d.message}`));
+			console.error(
+				color(
+					t("main.p_p", {
+						p0: String(d.type === "error" ? t("main.error_2") : t("main.warning_2")),
+						p1: String(d.message),
+					}),
+				),
+			);
 		}
 		if (parsed.diagnostics.some((d) => d.type === "error")) {
 			process.exit(1);
@@ -623,11 +669,11 @@ export async function main(args: string[], options?: MainOptions) {
 			const outputPath = parsed.messages.length > 0 ? parsed.messages[0] : undefined;
 			result = await exportFromFile(parsed.export, outputPath);
 		} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : "导出会话失败";
-			console.error(chalk.red(`错误：${message}`));
+			const message = error instanceof Error ? error.message : t("main.failed_to_export_session");
+			console.error(chalk.red(t("main.error_p", { p0: String(message) })));
 			process.exit(1);
 		}
-		console.log(`已导出到：${result}`);
+		console.log(t("main.exported_to_p", { p0: String(result) }));
 		process.exit(0);
 	}
 
@@ -638,7 +684,7 @@ export async function main(args: string[], options?: MainOptions) {
 	}
 
 	if (parsed.mode === "rpc" && parsed.fileArgs.length > 0) {
-		console.error(chalk.red("错误：RPC 模式不支持 @file 参数"));
+		console.error(chalk.red(t("main.error_file_arguments_are_not_supported_in")));
 		process.exit(1);
 	}
 
@@ -690,7 +736,7 @@ export async function main(args: string[], options?: MainOptions) {
 	if (parsed.name !== undefined) {
 		const name = normalizeSessionName(parsed.name);
 		if (name === undefined) {
-			console.error(chalk.red("错误：--name 需要非空值"));
+			console.error(chalk.red(t("main.error_name_requires_a_non_empty_value")));
 			process.exit(1);
 		}
 		sessionManager.appendSessionInfo(name);
@@ -781,7 +827,7 @@ export async function main(args: string[], options?: MainOptions) {
 			...collectSettingsDiagnostics(settingsManager),
 			...resourceLoader.getExtensions().errors.map(({ path, error }) => ({
 				type: "error" as const,
-				message: `加载扩展 "${path}" 失败：${error}`,
+				message: `Failed to load extension "${path}": ${error}`,
 			})),
 		];
 
@@ -807,7 +853,7 @@ export async function main(args: string[], options?: MainOptions) {
 			if (!sessionOptions.model) {
 				diagnostics.push({
 					type: "error",
-					message: "--api-key 需要通过 --model、--provider/--model 或 --models 指定模型",
+					message: "--api-key requires a model to be specified via --model, --provider/--model, or --models",
 				});
 			} else {
 				await modelRuntime.setRuntimeApiKey(sessionOptions.model.provider, parsed.apiKey);
@@ -899,8 +945,8 @@ export async function main(args: string[], options?: MainOptions) {
 		reportDiagnostics(startupDiagnostics);
 	}
 	if (hasRuntimeErrors) {
-		if (runtime.diagnostics.some((diagnostic) => diagnostic.message.includes("加载扩展"))) {
-			console.error(chalk.yellow(EXTENSION_LOAD_FAILURE_HINT));
+		if (runtime.diagnostics.some((diagnostic) => diagnostic.message.includes(t("main.failed_to_load_extension")))) {
+			console.error(chalk.yellow(extensionLoadFailureHint()));
 		}
 		process.exit(1);
 	}
@@ -913,7 +959,7 @@ export async function main(args: string[], options?: MainOptions) {
 
 	const startupBenchmark = isTruthyEnvFlag(process.env.PI_STARTUP_BENCHMARK);
 	if (startupBenchmark && appMode !== "interactive") {
-		console.error(chalk.red("错误：PI_STARTUP_BENCHMARK 仅支持交互模式"));
+		console.error(chalk.red(t("main.error_pi_startup_benchmark_only_supports_interactive")));
 		process.exit(1);
 	}
 

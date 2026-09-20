@@ -60,7 +60,7 @@ function resolvePromptInput(input: string | undefined, description: string): str
 		try {
 			return stripBom(readFileSync(input, "utf-8"));
 		} catch (error) {
-			console.error(chalk.yellow(`警告：无法读取${description}文件 ${input}：${error}`));
+			console.error(chalk.yellow(`Warning: Could not read ${description} file ${input}: ${error}`));
 			return input;
 		}
 	}
@@ -82,7 +82,7 @@ function loadContextFileFromDir(dir: string): { path: string; content: string } 
 					content: stripBom(readFileSync(filePath, "utf-8")),
 				};
 			} catch (error) {
-				console.error(chalk.yellow(`警告：无法读取 ${filePath}：${error}`));
+				console.error(chalk.yellow(`Warning: Could not read ${filePath}: ${error}`));
 			}
 		}
 	}
@@ -458,7 +458,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			if (isLocalPath(p)) {
 				const resolved = this.resolveResourcePath(p);
 				if (!existsSync(resolved)) {
-					extensionsResult.errors.push({ path: resolved, error: `扩展路径不存在：${resolved}` });
+					extensionsResult.errors.push({ path: resolved, error: `Extension path does not exist: ${resolved}` });
 				}
 			}
 		}
@@ -475,7 +475,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			if (isLocalPath(p)) {
 				const resolved = this.resolveResourcePath(p);
 				if (!existsSync(resolved) && !this.skillDiagnostics.some((d) => d.path === resolved)) {
-					this.skillDiagnostics.push({ type: "error", message: "技能路径不存在", path: resolved });
+					this.skillDiagnostics.push({ type: "error", message: "Skill path does not exist", path: resolved });
 				}
 			}
 		}
@@ -492,7 +492,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 				if (!existsSync(resolved) && !this.promptDiagnostics.some((d) => d.path === resolved)) {
 					this.promptDiagnostics.push({
 						type: "error",
-						message: "提示词模板路径不存在",
+						message: "Prompt template path does not exist",
 						path: resolved,
 					});
 				}
@@ -508,7 +508,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		for (const p of this.additionalThemePaths) {
 			const resolved = this.resolveResourcePath(p);
 			if (!existsSync(resolved) && !this.themeDiagnostics.some((d) => d.path === resolved)) {
-				this.themeDiagnostics.push({ type: "error", message: "主题路径不存在", path: resolved });
+				this.themeDiagnostics.push({ type: "error", message: "Theme path does not exist", path: resolved });
 			}
 		}
 
@@ -524,7 +524,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		this.agentsFiles = resolvedAgentsFiles.agentsFiles;
 
 		const systemPromptSource = this.systemPromptSource ?? this.discoverSystemPromptFile();
-		const baseSystemPrompt = resolvePromptInput(systemPromptSource, "系统提示词");
+		const baseSystemPrompt = resolvePromptInput(systemPromptSource, "system prompt");
 		this.systemPrompt = this.systemPromptOverride ? this.systemPromptOverride(baseSystemPrompt) : baseSystemPrompt;
 		this.systemPromptSourcePath =
 			systemPromptSource && existsSync(systemPromptSource) ? resolvePath(systemPromptSource) : undefined;
@@ -535,7 +535,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			appendSources = discoveredAppendSystemPromptFile ? [discoveredAppendSystemPromptFile] : [];
 		}
 		const baseAppend = appendSources
-			.map((s) => resolvePromptInput(s, "追加系统提示词"))
+			.map((s) => resolvePromptInput(s, "append system prompt"))
 			.filter((s): s is string => s !== undefined);
 		this.appendSystemPrompt = this.appendSystemPromptOverride
 			? this.appendSystemPromptOverride(baseAppend)
@@ -882,7 +882,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		for (const p of paths) {
 			const resolved = this.resolveResourcePath(p);
 			if (!existsSync(resolved)) {
-				diagnostics.push({ type: "warning", message: "主题路径不存在", path: resolved });
+				diagnostics.push({ type: "warning", message: "theme path does not exist", path: resolved });
 				continue;
 			}
 
@@ -893,10 +893,10 @@ export class DefaultResourceLoader implements ResourceLoader {
 				} else if (stats.isFile() && resolved.endsWith(".json")) {
 					this.loadThemeFromFile(resolved, themes, diagnostics);
 				} else {
-					diagnostics.push({ type: "warning", message: "主题路径不是 json 文件", path: resolved });
+					diagnostics.push({ type: "warning", message: "theme path is not a json file", path: resolved });
 				}
 			} catch (error) {
-				const message = error instanceof Error ? error.message : "读取主题路径失败";
+				const message = error instanceof Error ? error.message : "failed to read theme path";
 				diagnostics.push({ type: "warning", message, path: resolved });
 			}
 		}
@@ -929,7 +929,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 				this.loadThemeFromFile(join(dir, entry.name), themes, diagnostics);
 			}
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "读取主题目录失败";
+			const message = error instanceof Error ? error.message : "failed to read theme directory";
 			diagnostics.push({ type: "warning", message, path: dir });
 		}
 	}
@@ -938,7 +938,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		try {
 			themes.push(loadThemeFromPath(filePath));
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "加载主题失败";
+			const message = error instanceof Error ? error.message : "failed to load theme";
 			diagnostics.push({ type: "warning", message, path: filePath });
 		}
 	}
@@ -959,7 +959,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 				extension.hidden = isNamed && input.hidden;
 				extensions.push(extension);
 			} catch (error) {
-				const message = error instanceof Error ? error.message : "加载扩展失败";
+				const message = error instanceof Error ? error.message : "failed to load extension";
 				errors.push({ path: extensionPath, error: message });
 			}
 		}
@@ -976,7 +976,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			if (existing) {
 				diagnostics.push({
 					type: "collision",
-					message: `name "/${prompt.name}" 冲突`,
+					message: `name "/${prompt.name}" collision`,
 					path: prompt.filePath,
 					collision: {
 						resourceType: "prompt",
@@ -998,12 +998,12 @@ export class DefaultResourceLoader implements ResourceLoader {
 		const diagnostics: ResourceDiagnostic[] = [];
 
 		for (const t of themes) {
-			const name = t.name ?? "未命名";
+			const name = t.name ?? "unnamed";
 			const existing = seen.get(name);
 			if (existing) {
 				diagnostics.push({
 					type: "collision",
-					message: `name "${name}" 冲突`,
+					message: `name "${name}" collision`,
 					path: t.sourcePath,
 					collision: {
 						resourceType: "theme",
@@ -1071,7 +1071,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 				if (existingOwner && existingOwner !== ext.path) {
 					conflicts.push({
 						path: ext.path,
-						message: `工具 "${toolName}" 与 ${existingOwner} 冲突`,
+						message: `Tool "${toolName}" conflicts with ${existingOwner}`,
 					});
 				} else {
 					toolOwners.set(toolName, ext.path);
@@ -1084,7 +1084,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 				if (existingOwner && existingOwner !== ext.path) {
 					conflicts.push({
 						path: ext.path,
-						message: `flag "--${flagName}" 与 ${existingOwner} 冲突`,
+						message: `Flag "--${flagName}" conflicts with ${existingOwner}`,
 					});
 				} else {
 					flagOwners.set(flagName, ext.path);

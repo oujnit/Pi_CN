@@ -10,6 +10,7 @@ import {
 	Spacer,
 	Text,
 } from "@earendil-works/pi-tui";
+import { t } from "../../../i18n/index.ts";
 import { getSelectListTheme, theme } from "../theme/theme.ts";
 
 const SUBMENU_SELECT_LIST_LAYOUT: SelectListLayoutOptions = {
@@ -86,8 +87,8 @@ export class SelectSubmenu extends Container {
 		// Hint
 		this.addChild(new Spacer(1));
 		const hint = submenuOptions?.searchable
-			? "  输入以过滤 \u00b7 回车 选择 \u00b7 Esc 返回"
-			: "  回车 选择 \u00b7 Esc 返回";
+			? t("settings_submenu.type_to_filter_enter_to_select_esc")
+			: t("settings_submenu.enter_to_select_esc_to_go_back");
 		this.addChild(new Text(theme.fg("dim", hint), 0, 0));
 	}
 
@@ -201,7 +202,8 @@ export class SteppedSubmenu extends Container {
 	private buildStep(stepIndex: number): Component {
 		const step = this.steps[stepIndex];
 		const total = this.steps.length;
-		const stepLabel = total > 1 ? `第 ${stepIndex + 1}/${total} 步 \u00b7 ` : "";
+		const stepLabel =
+			total > 1 ? t("settings_submenu.step_p_p", { p0: String(stepIndex + 1), p1: String(total) }) : "";
 
 		const title = typeof step.title === "function" ? step.title(this.context) : step.title;
 		const desc = typeof step.description === "function" ? step.description(this.context) : step.description;

@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { SettingsList, type SettingsListTheme } from "../src/components/settings-list.ts";
+import { visibleWidth } from "../src/utils.ts";
 
 const testTheme: SettingsListTheme = {
 	label: (text) => text,
@@ -54,5 +55,35 @@ describe("SettingsList", () => {
 		list.handleInput(" ");
 
 		assert.deepStrictEqual(changes, [{ id: "tui-mode", value: "fullscreen" }]);
+	});
+
+	it("renders mapped labels but writes raw values and searches aliases", () => {
+		const changes: Array<{ id: string; value: string }> = [];
+		const list = new SettingsList(
+			[
+				{
+					id: "delivery-mode",
+					label: "投递模式",
+					searchAliases: ["Delivery mode"],
+					currentValue: "one-at-a-time",
+					values: ["one-at-a-time", "all"],
+					valueLabels: { "one-at-a-time": "逐条投递", all: "全部投递" },
+				},
+			],
+			10,
+			testTheme,
+			(id, value) => changes.push({ id, value }),
+			() => {},
+			{ enableSearch: true },
+		);
+
+		for (const character of "Delivery") list.handleInput(character);
+		for (const width of [40, 80, 120]) {
+			const output = list.render(width);
+			assert.ok(output.every((line) => visibleWidth(line) <= width));
+			assert.match(output.join("\n"), /逐条投递/);
+		}
+		list.handleInput("\r");
+		assert.deepStrictEqual(changes, [{ id: "delivery-mode", value: "all" }]);
 	});
 });

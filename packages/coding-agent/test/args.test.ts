@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { normalizeSessionName, parseArgs } from "../src/cli/args.ts";
+import { extractLanguageArgs, normalizeSessionName, parseArgs } from "../src/cli/args.ts";
 
 describe("parseArgs", () => {
 	describe("--version flag", () => {
@@ -30,6 +30,26 @@ describe("parseArgs", () => {
 		test("parses -h shorthand", () => {
 			const result = parseArgs(["-h"]);
 			expect(result.help).toBe(true);
+		});
+	});
+
+	describe("--lang flag", () => {
+		test("extracts the language before a subcommand", () => {
+			expect(extractLanguageArgs(["--lang", "en", "auth", "status"])).toEqual({
+				args: ["auth", "status"],
+				language: "en",
+			});
+		});
+
+		test("does not interpret prompt text after -- as a language flag", () => {
+			expect(extractLanguageArgs(["--", "--lang", "en"])).toEqual({
+				args: ["--", "--lang", "en"],
+				language: undefined,
+			});
+		});
+
+		test("preserves a missing value for strict validation", () => {
+			expect(extractLanguageArgs(["--lang", "--help"])).toEqual({ args: ["--help"], language: "" });
 		});
 	});
 

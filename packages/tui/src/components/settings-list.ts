@@ -15,6 +15,10 @@ export interface SettingItem {
 	currentValue: string;
 	/** If provided, Enter/Space cycles through these values */
 	values?: string[];
+	/** Optional labels for raw values. Raw values are still passed to onChange. */
+	valueLabels?: Readonly<Record<string, string | (() => string)>>;
+	/** Additional terms that can find this item without changing its label. */
+	searchAliases?: readonly string[];
 	/** If provided, Enter opens this submenu. Receives current value and done callback.
 	 *  done() accepts an optional selectedValue and an optional navigateTo id to move the cursor after close. */
 	submenu?: (
@@ -33,6 +37,10 @@ export interface SettingsListTheme {
 
 export interface SettingsListOptions {
 	enableSearch?: boolean;
+	emptyMessage?: string | (() => string);
+	noMatchMessage?: string | (() => string);
+	hintMessage?: string | (() => string);
+	searchHintMessage?: string | (() => string);
 }
 
 export class SettingsList implements Component {
@@ -46,6 +54,7 @@ export class SettingsList implements Component {
 	private onCancel: () => void;
 	private searchInput?: Input;
 	private searchEnabled: boolean;
+	private options: SettingsListOptions;
 
 	// Submenu state
 	private submenuComponent: Component | null = null;
@@ -67,6 +76,7 @@ export class SettingsList implements Component {
 		this.onChange = onChange;
 		this.onCancel = onCancel;
 		this.searchEnabled = options.enableSearch ?? false;
+		this.options = options;
 		if (this.searchEnabled) {
 			this.searchInput = new Input();
 		}
@@ -91,6 +101,7 @@ export class SettingsList implements Component {
 
 	invalidate(): void {
 		this.submenuComponent?.invalidate?.();
+		if (this.searchEnabled && this.searchInput) this.applyFilter(this.searchInput.getValue(), false);
 	}
 
 	render(width: number): string[] {
@@ -111,7 +122,7 @@ export class SettingsList implements Component {
 		}
 
 		if (this.items.length === 0) {
-			lines.push(this.theme.hint("  No settings available"));
+			lines.push(this.theme.hint(`  ${this.resolveText(this.options.emptyMessage, "No settings available")}`));
 			if (this.searchEnabled) {
 				this.addHintLine(lines, width);
 			}
@@ -120,7 +131,12 @@ export class SettingsList implements Component {
 
 		const displayItems = this.getDisplayItems();
 		if (displayItems.length === 0) {
-			lines.push(truncateToWidth(this.theme.hint("  No matching settings"), width));
+			lines.push(
+				truncateToWidth(
+					this.theme.hint(`  ${this.resolveText(this.options.noMatchMessage, "No matching settings")}`),
+					width,
+				),
+			);
 			this.addHintLine(lines, width);
 			return lines;
 		}
@@ -149,7 +165,9 @@ export class SettingsList implements Component {
 			const usedWidth = prefixWidth + maxLabelWidth + visibleWidth(separator);
 			const valueMaxWidth = width - usedWidth - 2;
 
-			const valueText = this.theme.value(truncateToWidth(item.currentValue, valueMaxWidth, ""), isSelected);
+			const mappedValue = item.valueLabels?.[item.currentValue];
+			const displayValue = typeof mappedValue === "function" ? mappedValue() : (mappedValue ?? item.currentValue);
+			const valueText = this.theme.value(truncateToWidth(displayValue, valueMaxWidth, ""), isSelected);
 
 			lines.push(truncateToWidth(prefix + labelText + separator + valueText, width));
 		}
@@ -307,9 +325,13 @@ export class SettingsList implements Component {
 		}
 	}
 
-	private applyFilter(query: string): void {
-		this.filteredItems = fuzzyFilter(this.items, query, (item) => item.label);
-		this.selectedIndex = 0;
+	private applyFilter(query: string, resetSelection = true): void {
+		const selectedId = this.getDisplayItems()[this.selectedIndex]?.id;
+		this.filteredItems = fuzzyFilter(this.items, query, (item) =>
+			[item.id, item.label, ...(item.searchAliases ?? [])].join(" "),
+		);
+		const preservedIndex = selectedId ? this.filteredItems.findIndex((item) => item.id === selectedId) : -1;
+		this.selectedIndex = resetSelection || preservedIndex < 0 ? 0 : preservedIndex;
 	}
 
 	private addHintLine(lines: string[], width: number): void {
@@ -317,12 +339,21 @@ export class SettingsList implements Component {
 		lines.push(
 			truncateToWidth(
 				this.theme.hint(
-					this.searchEnabled
-						? "  Type to search · Enter/Space to change · Esc to cancel"
-						: "  Enter/Space to change · Esc to cancel",
+					`  ${
+						this.searchEnabled
+							? this.resolveText(
+									this.options.searchHintMessage,
+									"Type to search · Enter/Space to change · Esc to cancel",
+								)
+							: this.resolveText(this.options.hintMessage, "Enter/Space to change · Esc to cancel")
+					}`,
 				),
 				width,
 			),
 		);
+	}
+
+	private resolveText(value: string | (() => string) | undefined, fallback: string): string {
+		return typeof value === "function" ? value() : (value ?? fallback);
 	}
 }

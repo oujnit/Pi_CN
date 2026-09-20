@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Presentation for the shell tools.
  *
@@ -43,7 +44,7 @@ function formatDuration(ms: number): string {
 function formatShellCall(args: { command?: string; timeout?: number } | undefined, prompt: string): string {
 	const command = str(args?.command);
 	const timeout = args?.timeout as number | undefined;
-	const timeoutSuffix = timeout ? theme.fg("muted", `（超时 ${timeout}s）`) : "";
+	const timeoutSuffix = timeout ? theme.fg("muted", t("bash.timeout_p_s", { p0: String(timeout) })) : "";
 	const commandDisplay = command === null ? invalidArgText(theme) : command ? command : theme.fg("toolOutput", "...");
 	return theme.fg("toolTitle", theme.bold(`${prompt} ${commandDisplay}`)) + timeoutSuffix;
 }
@@ -90,8 +91,8 @@ function rebuildBashResultRenderComponent(
 					}
 					if (state.cachedSkipped && state.cachedSkipped > 0) {
 						const hint =
-							theme.fg("muted", `...（前面还有 ${state.cachedSkipped} 行，`) +
-							` ${keyHint("app.tools.expand", "按此展开")}${theme.fg("muted", "）")}`;
+							theme.fg("muted", t("bash.p_earlier_lines", { p0: String(state.cachedSkipped) })) +
+							` ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
 						return ["", truncateToWidth(hint, width, "..."), ...(state.cachedLines ?? [])];
 					}
 					return ["", ...(state.cachedLines ?? [])];
@@ -108,14 +109,22 @@ function rebuildBashResultRenderComponent(
 	if (truncation?.truncated || fullOutputPath) {
 		const warnings: string[] = [];
 		if (fullOutputPath) {
-			warnings.push(`完整输出：${fullOutputPath}`);
+			warnings.push(t("bash.full_output_p", { p0: String(fullOutputPath) }));
 		}
 		if (truncation?.truncated) {
 			if (truncation.truncatedBy === "lines") {
-				warnings.push(`已截断：显示 ${truncation.outputLines}/${truncation.totalLines} 行`);
+				warnings.push(
+					t("bash.truncated_showing_p_of_p_lines", {
+						p0: String(truncation.outputLines),
+						p1: String(truncation.totalLines),
+					}),
+				);
 			} else {
 				warnings.push(
-					`已截断：显示 ${truncation.outputLines} 行（上限 ${formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)}）`,
+					t("bash.truncated_p_lines_shown_p_limit", {
+						p0: String(truncation.outputLines),
+						p1: String(formatSize(truncation.maxBytes ?? DEFAULT_MAX_BYTES)),
+					}),
 				);
 			}
 		}
@@ -123,7 +132,7 @@ function rebuildBashResultRenderComponent(
 	}
 
 	if (startedAt !== undefined) {
-		const label = options.isPartial ? "已用时" : "耗时";
+		const label = options.isPartial ? t("bash.elapsed") : t("bash.took");
 		const endTime = endedAt ?? Date.now();
 		component.addChild(new Text(`\n${theme.fg("muted", `${label} ${formatDuration(endTime - startedAt)}`)}`, 0, 0));
 	}

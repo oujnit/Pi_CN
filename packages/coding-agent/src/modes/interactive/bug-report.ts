@@ -13,10 +13,12 @@ import {
 } from "../../core/bug-report.ts";
 import { uploadBugReport } from "../../core/bug-report-upload.ts";
 import { clearCrashLog, readCrashLog } from "../../core/crash-log.ts";
+import type { KeybindingsManager } from "../../core/keybindings.ts";
 import { getRadiusGatewayUrl, RADIUS_PROVIDER_ID } from "../../core/radius.ts";
 import { serializeSessionBranch } from "../../core/session-export.ts";
+import { t } from "../../i18n/index.ts";
 import { BorderedLoader } from "./components/bordered-loader.ts";
-import { ExtensionInputComponent } from "./components/extension-input.ts";
+import { ExtensionEditorComponent } from "./components/extension-editor.ts";
 import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
 import { createShareTrailingEntries } from "./session-share.ts";
 import { theme } from "./theme/theme.ts";
@@ -26,6 +28,7 @@ interface BugReportContext {
 	ui: TUI;
 	editorContainer: Container;
 	editor: EditorComponent;
+	keybindings: KeybindingsManager;
 	showStatus: (message: string) => void;
 	showError: (message: string) => void;
 }
@@ -39,16 +42,16 @@ interface BugReportOptions {
 
 type Overlay = Container & { dispose?: () => void };
 
-const DISCLAIMER =
-	"该报告将发送给 Pi 开发者（Earendil），不会公开分享。内容包括：你的 pi 版本、操作系统、当前模型与供应商配置（不含 API key）、已加载的扩展、各项设置，以及本次会话中的供应商错误诊断信息。";
-const TRANSCRIPT_NOTE =
-	"会话记录包含你的消息、模型输出、工具调用及其结果，包括本次会话中读取到的文件内容和命令输出。";
+interface Choice<Value extends string> {
+	value: Value;
+	label: string;
+}
 
 /** Run the `/bug` flow: consent, optional summary, then upload or export. */
 export async function reportBug(context: BugReportContext, initialHint?: string): Promise<void> {
 	const options = await promptForOptions(context, initialHint);
 	if (!options) {
-		context.showStatus("bug 报告已取消");
+		context.showStatus(t("bug_report.bug_report_cancelled"));
 		return;
 	}
 
@@ -56,19 +59,24 @@ export async function reportBug(context: BugReportContext, initialHint?: string)
 	if (options.includeSummary) {
 		const loader = showLoader(
 			context,
-			`正在使用 ${context.session.model?.name ?? "当前模型"} 生成摘要...`,
+			t("bug_report.writing_summary_with_p", {
+				p0: String(context.session.model?.name ?? t("bug_report.the_current_model")),
+			}),
 		);
 		try {
 			summary = await context.session.summarizeForBugReport({ hint: options.hint, signal: loader.signal });
 		} catch (error: unknown) {
 			restoreEditor(context, loader);
-			if (loader.signal.aborted) context.showStatus("bug 报告已取消");
-			else context.showError(`生成 bug 报告摘要失败：${errorMessage(error)}`);
+			if (loader.signal.aborted) context.showStatus(t("bug_report.bug_report_cancelled"));
+			else
+				context.showError(
+					t("bug_report.failed_to_write_bug_report_summary_p", { p0: String(errorMessage(error)) }),
+				);
 			return;
 		}
 		restoreEditor(context, loader);
 		if (loader.signal.aborted) {
-			context.showStatus("bug 报告已取消");
+			context.showStatus(t("bug_report.bug_report_cancelled"));
 			return;
 		}
 	}
@@ -77,7 +85,7 @@ export async function reportBug(context: BugReportContext, initialHint?: string)
 	try {
 		bundle = buildBundle(context.session, options, summary);
 	} catch (error: unknown) {
-		context.showError(`构建 bug 报告失败：${errorMessage(error)}`);
+		context.showError(t("bug_report.failed_to_build_bug_report_p", { p0: String(errorMessage(error)) }));
 		return;
 	}
 
@@ -86,12 +94,15 @@ export async function reportBug(context: BugReportContext, initialHint?: string)
 		if (failure === undefined) return;
 		const fallback = await choose(
 			context,
-			"上传失败",
-			["导出为 Zip", "取消"],
-			`${failure}\n\n改为将报告导出为 zip 压缩包？`,
+			t("bug_report.upload_failed"),
+			[
+				{ value: "export", label: t("bug_report.export_as_zip") },
+				{ value: "cancel", label: t("bug_report.cancel") },
+			],
+			t("bug_report.p_export_the_report_as_a_zip", { p0: String(failure) }),
 		);
-		if (fallback !== "导出为 Zip") {
-			context.showStatus("bug 报告已取消");
+		if (fallback !== "export") {
+			context.showStatus(t("bug_report.bug_report_cancelled"));
 			return;
 		}
 	}
@@ -102,41 +113,73 @@ async function promptForOptions(
 	context: BugReportContext,
 	initialHint: string | undefined,
 ): Promise<BugReportOptions | undefined> {
-	const hint = await input(context, "报告 bug", `${DISCLAIMER}\n\n出了什么问题？（可选）`, initialHint);
+	const hint = await input(
+		context,
+		t("bug_report.report_a_bug"),
+		t("bug_report.p_what_went_wrong_optional", {
+			p0: String(t("bug_report.this_report_goes_to_the_pi_developers")),
+		}),
+		initialHint,
+	);
 	if (hint === null) return undefined;
 	const transcript = await choose(
 		context,
-		"是否包含会话记录？",
-		["是，包含会话记录", "否"],
-		TRANSCRIPT_NOTE,
+		t("bug_report.include_the_session_transcript"),
+		[
+			{ value: "include", label: t("bug_report.yes_include_the_transcript") },
+			{ value: "exclude", label: t("bug_report.no") },
+		],
+		t("bug_report.the_transcript_contains_your_messages_model_output"),
 	);
 	if (!transcript) return undefined;
-	const includeSession = transcript !== "否";
+	const includeSession = transcript === "include";
 	let includeSummary = false;
 	if (!includeSession) {
 		const model = context.session.model;
 		const summary = await choose(
 			context,
-			`改为附上由 ${model?.name ?? "当前模型"} 生成的摘要？`,
-			["是，生成摘要", "否"],
-			`会话记录将连同你的凭据和 token 一起发送给 ${model?.provider ?? "你的供应商"}。仅附上生成的摘要，会话记录仍保留在你的机器上。`,
+			t("bug_report.attach_a_summary_written_by_p_instead", {
+				p0: String(model?.name ?? t("bug_report.the_current_model")),
+			}),
+			[
+				{ value: "generate", label: t("bug_report.yes_generate_a_summary") },
+				{ value: "skip", label: t("bug_report.no") },
+			],
+			t("bug_report.the_transcript_is_sent_to_p_with", {
+				p0: String(model?.provider ?? t("bug_report.your_provider")),
+			}),
 		);
 		if (!summary) return undefined;
-		includeSummary = summary !== "否";
+		includeSummary = summary === "generate";
 	}
 	const description = hint.trim();
 	const delivery = await choose(
 		context,
-		"bug 报告",
-		["上传报告", "导出为 Zip", "取消"],
-		`描述：${description || "无"}\n会话记录：${includeSession ? "包含" : "不包含"}\n摘要：${includeSummary ? `由 ${context.session.model?.name ?? "当前模型"} 生成` : "无"}\n\n上传会把报告发送到 ${new URL(getRadiusGatewayUrl()).host}。导出则会在当前目录写入一个 zip 压缩包。`,
+		t("bug_report.bug_report"),
+		[
+			{ value: "upload", label: t("bug_report.upload_report") },
+			{ value: "zip", label: t("bug_report.export_as_zip") },
+			{ value: "cancel", label: t("bug_report.cancel") },
+		],
+		t("bug_report.description_p_transcript_p_summary_p_upload", {
+			p0: String(description || t("bug_report.none")),
+			p1: String(includeSession ? t("bug_report.included") : t("bug_report.not_included")),
+			p2: String(
+				includeSummary
+					? t("bug_report.written_by_p", {
+							p0: String(context.session.model?.name ?? t("bug_report.the_current_model")),
+						})
+					: t("bug_report.none"),
+			),
+			p3: String(new URL(getRadiusGatewayUrl()).host),
+		}),
 	);
-	if (!delivery || delivery === "取消") return undefined;
+	if (!delivery || delivery === "cancel") return undefined;
 	return {
 		hint: description || undefined,
 		includeSession,
 		includeSummary,
-		delivery: delivery === "上传报告" ? "upload" : "zip",
+		delivery,
 	};
 }
 
@@ -169,7 +212,7 @@ function buildBundle(session: AgentSession, options: BugReportOptions, summary: 
 }
 
 async function upload(context: BugReportContext, bundle: BugReportBundle): Promise<string | undefined> {
-	const loader = showLoader(context, "正在上传 bug 报告...");
+	const loader = showLoader(context, t("bug_report.uploading_bug_report"));
 	try {
 		const provider = context.session.modelRuntime.getProvider(RADIUS_PROVIDER_ID);
 		const token = provider
@@ -180,12 +223,12 @@ async function upload(context: BugReportContext, bundle: BugReportBundle): Promi
 		const result = await uploadBugReport(bundle, { token, signal: loader.signal });
 		restoreEditor(context, loader);
 		recordInSession(context.session, bundle, { delivery: "upload" });
-		context.showStatus(`bug 报告已上传。报告 ID：${result.id}`);
+		context.showStatus(t("bug_report.bug_report_uploaded_report_id_p", { p0: String(result.id) }));
 		return undefined;
 	} catch (error: unknown) {
 		restoreEditor(context, loader);
 		if (loader.signal.aborted) {
-			context.showStatus("bug 报告已取消");
+			context.showStatus(t("bug_report.bug_report_cancelled"));
 			return undefined;
 		}
 		return errorMessage(error);
@@ -197,11 +240,13 @@ async function exportZip(context: BugReportContext, bundle: BugReportBundle): Pr
 	try {
 		await writeBugReportArchive(bundle, archivePath);
 	} catch (error: unknown) {
-		context.showError(`写入 bug 报告失败：${errorMessage(error)}`);
+		context.showError(t("bug_report.failed_to_write_bug_report_p", { p0: String(errorMessage(error)) }));
 		return;
 	}
 	recordInSession(context.session, bundle, { delivery: "zip", path: archivePath });
-	context.showStatus(`bug 报告已导出到：${archivePath}\n报告 ID：${bundle.metadata.id}`);
+	context.showStatus(
+		t("bug_report.bug_report_exported_to_p_report_id", { p0: String(archivePath), p1: String(bundle.metadata.id) }),
+	);
 }
 
 function recordInSession(
@@ -227,41 +272,47 @@ function input(
 	initialValue?: string,
 ): Promise<string | null> {
 	return new Promise((resolve) => {
-		let component: ExtensionInputComponent;
+		let component: ExtensionEditorComponent;
 		const finish = (value: string | null) => {
 			restoreEditor(context, component);
 			resolve(value);
 		};
-		component = new ExtensionInputComponent(
+		component = new ExtensionEditorComponent(
+			context.ui,
+			context.keybindings,
 			title,
-			undefined,
+			initialValue,
 			(value) => finish(value),
 			() => finish(null),
-			{
-				initialValue,
-				description,
-			},
+			{ description },
+			context.session.settingsManager.getExternalEditorCommand(),
 		);
 		showOverlay(context, component);
 	});
 }
 
-function choose(
+function choose<Value extends string>(
 	context: BugReportContext,
 	title: string,
-	options: string[],
+	options: readonly Choice<Value>[],
 	description?: string,
-): Promise<string | undefined> {
+): Promise<Value | undefined> {
 	return new Promise((resolve) => {
 		let component: ExtensionSelectorComponent;
-		const finish = (value?: string) => {
+		const finish = (label?: string) => {
 			restoreEditor(context, component);
-			resolve(value);
+			resolve(options.find((option) => option.label === label)?.value);
 		};
-		component = new ExtensionSelectorComponent(title, options, finish, () => finish(), {
-			tui: context.ui,
-			description,
-		});
+		component = new ExtensionSelectorComponent(
+			title,
+			options.map((option) => option.label),
+			finish,
+			() => finish(),
+			{
+				tui: context.ui,
+				description,
+			},
+		);
 		showOverlay(context, component);
 	});
 }
@@ -288,5 +339,5 @@ function restoreEditor(context: BugReportContext, component: Overlay): void {
 }
 
 function errorMessage(error: unknown): string {
-	return error instanceof Error ? error.message : "未知错误";
+	return error instanceof Error ? error.message : t("bug_report.unknown_error");
 }

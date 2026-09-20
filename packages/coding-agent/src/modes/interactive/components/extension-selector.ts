@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * Generic selector component for extensions.
  * Displays a list of string options with keyboard navigation.
@@ -67,11 +68,12 @@ export class ExtensionSelectorComponent extends Container {
 		this.addChild(new Spacer(1));
 		this.addChild(
 			new Text(
-				rawKeyHint("↑↓", "移动") +
+				() =>
+					rawKeyHint("↑↓", t("extension_selector.navigate")) +
 					"  " +
-					keyHint("tui.select.confirm", "选择") +
+					keyHint("tui.select.confirm", t("extension_selector.select")) +
 					"  " +
-					keyHint("tui.select.cancel", "取消"),
+					keyHint("tui.select.cancel", t("extension_selector.cancel")),
 				1,
 				0,
 			),
