@@ -16,6 +16,8 @@
 
 This is the home of the Pi agent harness project including our self extensible coding agent.
 
+> This unofficial Pi_CN fork is based on upstream v0.86.0. It starts in Simplified Chinese and supports English through `--lang en`, `PI_LANG=en`, or the live “Language / 语言” setting. Source builds use `npm ci --ignore-scripts` followed by `npm run build:zh`; the latter restores and validates the fork's checked-in model-data snapshot without accessing the online model catalog.
+
 * **[@earendil-works/pi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
 * **[@earendil-works/pi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
 * **[@earendil-works/pi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
@@ -56,6 +58,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [AGENTS.m
 
 ```bash
 npm install --ignore-scripts  # Install all dependencies without running lifecycle scripts
+npm run build:zh      # Validate the Pi_CN model snapshot and build offline
 npm run build         # Refresh model data, then build all packages
 npm run build:offline # Rebuild using existing model data without network access
 npm run check         # Lint, format, and type check
