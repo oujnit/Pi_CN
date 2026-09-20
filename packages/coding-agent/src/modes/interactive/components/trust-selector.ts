@@ -64,9 +64,7 @@ export class TrustSelectorComponent extends Container {
 				0,
 			),
 		);
-		this.addChild(
-			new Text(theme.fg("muted", `当前会话：${options.projectTrusted ? "已信任" : "未信任"}`), 1, 0),
-		);
+		this.addChild(new Text(theme.fg("muted", `当前会话：${options.projectTrusted ? "已信任" : "未信任"}`), 1, 0));
 		this.addChild(new Spacer(1));
 
 		this.listContainer = new Container();

@@ -39,7 +39,7 @@ function formatSessionDate(date: Date): string {
 	const diffHours = Math.floor(diffMs / 3600000);
 	const diffDays = Math.floor(diffMs / 86400000);
 
-		if (diffMins < 1) return "刚刚";
+	if (diffMins < 1) return "刚刚";
 	if (diffMins < 60) return `${diffMins}m`;
 	if (diffHours < 24) return `${diffHours}h`;
 	if (diffDays < 7) return `${diffDays}d`;
@@ -420,20 +420,20 @@ class SessionList implements Component, Focusable {
 
 		if (this.filteredSessions.length === 0) {
 			let emptyMessage: string;
-				if (this.nameFilter === "named") {
-					const toggleKey = keyText("app.session.toggleNamedFilter");
-					if (this.showCwd) {
-						emptyMessage = `  没有找到已命名的会话。按 ${toggleKey} 显示全部。`;
-					} else {
-						emptyMessage = `  当前文件夹没有已命名的会话。按 ${toggleKey} 显示全部，或按 Tab 查看全部。`;
-					}
-				} else if (this.showCwd) {
-					// "All" scope - no sessions anywhere that match filter
-					emptyMessage = "  没有找到会话";
+			if (this.nameFilter === "named") {
+				const toggleKey = keyText("app.session.toggleNamedFilter");
+				if (this.showCwd) {
+					emptyMessage = `  没有找到已命名的会话。按 ${toggleKey} 显示全部。`;
 				} else {
-					// "Current folder" scope - hint to try "all"
-					emptyMessage = "  当前文件夹没有会话。按 Tab 查看全部。";
+					emptyMessage = `  当前文件夹没有已命名的会话。按 ${toggleKey} 显示全部，或按 Tab 查看全部。`;
 				}
+			} else if (this.showCwd) {
+				// "All" scope - no sessions anywhere that match filter
+				emptyMessage = "  没有找到会话";
+			} else {
+				// "Current folder" scope - hint to try "all"
+				emptyMessage = "  当前文件夹没有会话。按 Tab 查看全部。";
+			}
 			lines.push(theme.fg("muted", truncateToWidth(emptyMessage, width, "…")));
 			return lines;
 		}

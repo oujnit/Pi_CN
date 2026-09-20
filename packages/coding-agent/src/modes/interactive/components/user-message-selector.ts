@@ -121,13 +121,7 @@ export class UserMessageSelectorComponent extends Container {
 		// Add header
 		this.addChild(new Spacer(1));
 		this.addChild(new Text(theme.bold("从消息派生"), 1, 0));
-		this.addChild(
-			new Text(
-				theme.fg("muted", "选择一条用户消息，将其之前的活跃路径复制到新会话中"),
-				1,
-				0,
-			),
-		);
+		this.addChild(new Text(theme.fg("muted", "选择一条用户消息，将其之前的活跃路径复制到新会话中"), 1, 0));
 		this.addChild(new Spacer(1));
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));

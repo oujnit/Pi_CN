@@ -943,14 +943,8 @@ export class InteractiveMode {
 				rawKeyHint("!", "bash"),
 				hint("app.tools.expand", "更多"),
 			].join(theme.fg("muted", " · "));
-			const compactOnboarding = theme.fg(
-				"dim",
-				`按 ${keyText("app.tools.expand")} 查看完整启动帮助和已加载资源。`,
-			);
-			const onboarding = theme.fg(
-				"dim",
-				`Pi 可以讲解自身功能并查阅文档。想了解如何使用或扩展 Pi，直接问它。`,
-			);
+			const compactOnboarding = theme.fg("dim", `按 ${keyText("app.tools.expand")} 查看完整启动帮助和已加载资源。`);
+			const onboarding = theme.fg("dim", `Pi 可以讲解自身功能并查阅文档。想了解如何使用或扩展 Pi，直接问它。`);
 			this.builtInHeader = new ExpandableText(
 				() => `${logo}\n${compactInstructions}\n${compactOnboarding}\n\n${onboarding}`,
 				() => `${logo}\n${expandedInstructions}\n\n${onboarding}`,
@@ -2265,9 +2259,7 @@ export class InteractiveMode {
 		this.workingVisible = true;
 		this.setWorkingIndicator();
 		if (this.activeStatusIndicator?.kind === "working") {
-			this.activeStatusIndicator.setMessage(
-				`${this.defaultWorkingMessage}（${keyText("app.interrupt")} 中断）`,
-			);
+			this.activeStatusIndicator.setMessage(`${this.defaultWorkingMessage}（${keyText("app.interrupt")} 中断）`);
 		}
 		this.setHiddenThinkingLabel();
 	}
@@ -3283,10 +3275,7 @@ export class InteractiveMode {
 					let errorMessage: string | undefined;
 					if (this.streamingMessage.stopReason === "aborted") {
 						const retryAttempt = this.session.retryAttempt;
-						errorMessage =
-							retryAttempt > 0
-								? `重试 ${retryAttempt} 次后中止`
-								: "操作已中止";
+						errorMessage = retryAttempt > 0 ? `重试 ${retryAttempt} 次后中止` : "操作已中止";
 						this.streamingMessage.errorMessage = errorMessage;
 					}
 					this.streamingComponent.updateContent(this.streamingMessage, false);
@@ -3736,10 +3725,7 @@ export class InteractiveMode {
 							let errorMessage: string;
 							if (message.stopReason === "aborted") {
 								const retryAttempt = this.session.retryAttempt;
-								errorMessage =
-									retryAttempt > 0
-										? `重试 ${retryAttempt} 次后中止`
-										: "操作已中止";
+								errorMessage = retryAttempt > 0 ? `重试 ${retryAttempt} 次后中止` : "操作已中止";
 							} else {
 								errorMessage = message.errorMessage || "错误";
 							}
@@ -4438,11 +4424,7 @@ export class InteractiveMode {
 			this.session.clearQueue();
 			this.compactionQueuedMessages = queuedMessages;
 			this.updatePendingMessagesDisplay();
-			this.showError(
-				`发送排队消息失败：${
-					error instanceof Error ? error.message : String(error)
-				}`,
-			);
+			this.showError(`发送排队消息失败：${error instanceof Error ? error.message : String(error)}`);
 		};
 
 		try {
@@ -4954,9 +4936,7 @@ export class InteractiveMode {
 			this.autoTrustOnReloadCwd = undefined;
 			return true;
 		} catch (error) {
-			this.showWarning(
-				`重载后无法保存项目信任：${error instanceof Error ? error.message : String(error)}`,
-			);
+			this.showWarning(`重载后无法保存项目信任：${error instanceof Error ? error.message : String(error)}`);
 			return false;
 		}
 	}
@@ -4973,9 +4953,7 @@ export class InteractiveMode {
 				onSelect: (selection) => {
 					trustStore.setMany(selection.updates);
 					done();
-					this.showStatus(
-						`已保存信任决定：${selection.trusted ? "信任" : "不信任"}。重启 ${APP_NAME} 后生效。`,
-					);
+					this.showStatus(`已保存信任决定：${selection.trusted ? "信任" : "不信任"}。重启 ${APP_NAME} 后生效。`);
 				},
 				onCancel: () => {
 					done();
@@ -5539,9 +5517,7 @@ export class InteractiveMode {
 			return;
 		}
 
-		const title = providerOptions?.[0]
-			? `选择 ${providerOptions[0].name} 的认证方式：`
-			: "选择认证方式：";
+		const title = providerOptions?.[0] ? `选择 ${providerOptions[0].name} 的认证方式：` : "选择认证方式：";
 		this.showSelector((done) => {
 			const selector = new ExtensionSelectorComponent(
 				title,
@@ -5738,9 +5714,9 @@ export class InteractiveMode {
 				this.ui.requestRender();
 			})
 			.catch((error: unknown) => {
-			this.showWarning(
-				`${actionLabel}，但无法刷新模型目录：${error instanceof Error ? error.message : String(error)}`,
-			);
+				this.showWarning(
+					`${actionLabel}，但无法刷新模型目录：${error instanceof Error ? error.message : String(error)}`,
+				);
 			})
 			.finally(() => clearTimeout(timeout));
 	}
@@ -5760,11 +5736,7 @@ export class InteractiveMode {
 			providerOption.name,
 			`${providerOption.name} 设置`,
 		);
-		dialog.showInfo(
-			`${providerOption.method?.name ?? "认证"} 已在 ${APP_NAME} 外部配置。`,
-			[],
-			true,
-		);
+		dialog.showInfo(`${providerOption.method?.name ?? "认证"} 已在 ${APP_NAME} 外部配置。`, [], true);
 
 		this.editorContainer.clear();
 		this.editorContainer.addChild(dialog);
@@ -5812,9 +5784,7 @@ export class InteractiveMode {
 			restoreEditor();
 			const errorMsg = error instanceof Error ? error.message : String(error);
 			if (error instanceof CredentialSynchronizationError) {
-				this.showError(
-					`已保存 ${providerName} 的 API key，但本地模型状态同步失败：${errorMsg}`,
-				);
+				this.showError(`已保存 ${providerName} 的 API key，但本地模型状态同步失败：${errorMsg}`);
 			} else if (errorMsg !== "Login cancelled") {
 				this.showError(`保存 ${providerName} 的 API key 失败：${errorMsg}`);
 			}
@@ -5926,9 +5896,7 @@ export class InteractiveMode {
 			restoreEditor();
 			const errorMsg = error instanceof Error ? error.message : String(error);
 			if (error instanceof CredentialSynchronizationError) {
-				this.showError(
-					`已登录 ${providerName}，但本地模型状态同步失败：${errorMsg}`,
-				);
+				this.showError(`已登录 ${providerName}，但本地模型状态同步失败：${errorMsg}`);
 			} else if (errorMsg !== "Login cancelled") {
 				this.showError(`登录 ${providerName} 失败：${errorMsg}`);
 			}
@@ -5955,13 +5923,7 @@ export class InteractiveMode {
 		const borderColor = (s: string) => theme.fg("border", s);
 		reloadBox.addChild(new DynamicBorder(borderColor));
 		reloadBox.addChild(new Spacer(1));
-		reloadBox.addChild(
-			new Text(
-				theme.fg("muted", "正在重载键位、扩展、技能、提示词、主题和上下文文件..."),
-				1,
-				0,
-			),
-		);
+		reloadBox.addChild(new Text(theme.fg("muted", "正在重载键位、扩展、技能、提示词、主题和上下文文件..."), 1, 0));
 		reloadBox.addChild(new Spacer(1));
 		reloadBox.addChild(new DynamicBorder(borderColor));
 
@@ -6219,8 +6181,7 @@ export class InteractiveMode {
 		if (promptTokens > 0 && (cacheRead > 0 || cacheWrite > 0)) {
 			const hitRate = theme.fg("dim", `(${((cacheRead / promptTokens) * 100).toFixed(1)}%)`);
 			info += `  ${theme.fg("dim", "已缓存：")} ${cacheRead.toLocaleString()} ${hitRate}\n`;
-			const written =
-				cacheWrite > 0 ? ` ${theme.fg("dim", `（${cacheWrite.toLocaleString()} 写入缓存）`)}` : "";
+			const written = cacheWrite > 0 ? ` ${theme.fg("dim", `（${cacheWrite.toLocaleString()} 写入缓存）`)}` : "";
 			info += `  ${theme.fg("dim", "未缓存：")} ${(input + cacheWrite).toLocaleString()}${written}\n`;
 		}
 		info += `${theme.fg("dim", "输出：")} ${stats.tokens.output.toLocaleString()}\n`;

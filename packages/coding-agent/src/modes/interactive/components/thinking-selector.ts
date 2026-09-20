@@ -68,8 +68,8 @@ export class ThinkingSelectorComponent extends Container implements Focusable {
 		this.allItems = availableLevels.map((level) => ({
 			value: level,
 			label: `${level === currentLevel ? "✓ " : "  "}${level}`,
-				description:
-					level === defaultThinkingLevel ? `${LEVEL_DESCRIPTIONS[level]} · 默认` : LEVEL_DESCRIPTIONS[level],
+			description:
+				level === defaultThinkingLevel ? `${LEVEL_DESCRIPTIONS[level]} · 默认` : LEVEL_DESCRIPTIONS[level],
 		}));
 
 		// Add top border

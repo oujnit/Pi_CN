@@ -52,9 +52,7 @@ export class FirstTimeSetupComponent extends Container {
 		this.addChild(new Spacer(1));
 		this.addChild(new Text(theme.fg("accent", SETUP_LOGO_LINES.join("\n")), 1, 0));
 		this.addChild(new Spacer(1));
-		this.addChild(
-			new Text(theme.fg("accent", theme.bold(`欢迎使用 ${APP_NAME}，一个极简的编程助手。`)), 1, 0),
-		);
+		this.addChild(new Text(theme.fg("accent", theme.bold(`欢迎使用 ${APP_NAME}，一个极简的编程助手。`)), 1, 0));
 		this.addChild(new Spacer(1));
 
 		if (this.step === "theme") {

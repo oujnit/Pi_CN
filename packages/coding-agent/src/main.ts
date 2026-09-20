@@ -433,11 +433,7 @@ export async function createSessionManager(
 		if (existingSession) {
 			return SessionManager.open(existingSession.path, sessionDir);
 		}
-		console.error(
-				chalk.yellow(
-					`警告：未找到 id 为 '${parsed.sessionId}' 的项目会话；将创建使用该 id 的新会话。`,
-				),
-		);
+		console.error(chalk.yellow(`警告：未找到 id 为 '${parsed.sessionId}' 的项目会话；将创建使用该 id 的新会话。`));
 	}
 
 	return SessionManager.create(cwd, sessionDir, { id: parsed.sessionId });

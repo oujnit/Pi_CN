@@ -211,9 +211,9 @@ export class ModelSelectorComponent extends Container implements Focusable {
 		} catch (error) {
 			if (this.closed) return;
 			this.refreshStatusMessage = "";
-				this.errorMessage = timedOut
-					? "模型刷新超时；正在显示缓存的模型。"
-					: `无法刷新模型目录：${error instanceof Error ? error.message : String(error)}`;
+			this.errorMessage = timedOut
+				? "模型刷新超时；正在显示缓存的模型。"
+				: `无法刷新模型目录：${error instanceof Error ? error.message : String(error)}`;
 			this.updateList();
 			this.tui.requestRender();
 		} finally {

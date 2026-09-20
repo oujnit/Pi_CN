@@ -325,17 +325,11 @@ class ThemeSubmenu extends Container {
 				description: "自动模式下终端为浅色时使用的主题",
 				currentValue: this.lightTheme,
 				submenu: (currentValue, done) =>
-					this.createThemeSelect(
-						"浅色主题",
-						"选择浅色终端外观使用的主题",
-						currentValue,
-						done,
-						(value) => {
-							this.lightTheme = value;
-							this.callbacks.onThemePreview?.(this.getThemeSetting());
-							done(value);
-						},
-					),
+					this.createThemeSelect("浅色主题", "选择浅色终端外观使用的主题", currentValue, done, (value) => {
+						this.lightTheme = value;
+						this.callbacks.onThemePreview?.(this.getThemeSetting());
+						done(value);
+					}),
 			},
 			{
 				id: "dark-theme",
@@ -343,17 +337,11 @@ class ThemeSubmenu extends Container {
 				description: "自动模式下终端为深色时使用的主题",
 				currentValue: this.darkTheme,
 				submenu: (currentValue, done) =>
-					this.createThemeSelect(
-						"深色主题",
-						"选择深色终端外观使用的主题",
-						currentValue,
-						done,
-						(value) => {
-							this.darkTheme = value;
-							this.callbacks.onThemePreview?.(this.getThemeSetting());
-							done(value);
-						},
-					),
+					this.createThemeSelect("深色主题", "选择深色终端外观使用的主题", currentValue, done, (value) => {
+						this.darkTheme = value;
+						this.callbacks.onThemePreview?.(this.getThemeSetting());
+						done(value);
+					}),
 			},
 			{
 				id: "apply",
@@ -490,8 +478,7 @@ export class SettingsSelectorComponent extends Container {
 			{
 				id: "http-idle-timeout",
 				label: "HTTP 空闲超时",
-				description:
-					"等待 HTTP 响应头或响应体分块时的最大空闲间隔。本地模型停顿可能超过五分钟时可将其禁用。",
+				description: "等待 HTTP 响应头或响应体分块时的最大空闲间隔。本地模型停顿可能超过五分钟时可将其禁用。",
 				currentValue: formatHttpIdleTimeoutMs(config.httpIdleTimeoutMs),
 				values: HTTP_IDLE_TIMEOUT_CHOICES.map((choice) => choice.label),
 			},
