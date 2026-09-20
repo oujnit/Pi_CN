@@ -407,7 +407,7 @@ function runLogin(
 			if (notice.type === "auth_url") dialog.showAuth(notice.url, notice.instructions);
 			else if (notice.type === "device_code") {
 				dialog.showDeviceCode(notice);
-				dialog.showWaiting("Waiting for authentication...");
+				dialog.showWaiting("等待认证中...");
 			} else if (notice.type === "info") dialog.showInfo(notice.message, notice.links);
 			else dialog.showProgress(notice.message);
 		},

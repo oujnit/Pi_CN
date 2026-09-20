@@ -4736,7 +4736,7 @@ export class InteractiveMode {
 					},
 					onCacheWarmingModeChange: (mode) => {
 						this.session.setCacheWarmingMode(mode);
-						this.showStatus(`Cache warming: ${mode}`);
+						this.showStatus(`缓存预热：${mode}`);
 					},
 					onModelThinkingLevelChange: (provider, modelId, level) => {
 						this.settingsManager.setModelThinkingLevel(provider, modelId, level);
@@ -5359,9 +5359,7 @@ export class InteractiveMode {
 
 					// Recheck after the dialogs and streaming abort, before replacing another operation's UI.
 					if (this.session.isCompacting) {
-						this.showError(
-							"Wait for the current compaction or tree navigation to finish before navigating the session tree.",
-						);
+						this.showError("请等当前压缩或会话树导航完成后再导航会话树。");
 						return;
 					}
 
@@ -5774,7 +5772,7 @@ export class InteractiveMode {
 		authType: "oauth" | "api_key",
 		previousModel: Model<any> | undefined,
 	): Promise<void> {
-		const actionLabel = authType === "oauth" ? `Logged in to ${providerName}` : `Saved API key for ${providerName}`;
+		const actionLabel = authType === "oauth" ? `已登录 ${providerName}` : `已保存 ${providerName} 的 API key`;
 
 		const session = this.session;
 		// Dynamic catalogs may be empty until the first authenticated network refresh.
@@ -6346,13 +6344,13 @@ export class InteractiveMode {
 		info += `${theme.fg("dim", "总计：")} ${stats.tokens.total.toLocaleString()}\n`;
 
 		const cacheWarmingStatus = this.session.cacheWarmingStatus;
-		info += `\n${theme.bold("Cache Warming")}\n`;
-		info += `${theme.fg("dim", "Mode:")} ${this.settingsManager.getCacheWarmingMode()}\n`;
-		info += `${theme.fg("dim", "Status:")} ${cacheWarmingStatus ? formatCacheWarmingStatus(cacheWarmingStatus) : "Inactive (cache warming unavailable)"}\n`;
+		info += `\n${theme.bold("缓存预热")}\n`;
+		info += `${theme.fg("dim", "模式：")} ${this.settingsManager.getCacheWarmingMode()}\n`;
+		info += `${theme.fg("dim", "状态：")} ${cacheWarmingStatus ? formatCacheWarmingStatus(cacheWarmingStatus) : "未激活（缓存预热不可用）"}\n`;
 		const decision = cacheWarmingStatus?.decision;
 		if (decision?.economicsAvailable) {
-			info += `${theme.fg("dim", "Cache miss penalty:")} $${decision.missCost.toFixed(3)}\n`;
-			info += `${theme.fg("dim", "Refresh cost:")} $${decision.warmCost.toFixed(3)}\n`;
+			info += `${theme.fg("dim", "缓存未命中代价：")} $${decision.missCost.toFixed(3)}\n`;
+			info += `${theme.fg("dim", "刷新成本：")} $${decision.warmCost.toFixed(3)}\n`;
 		}
 
 		if (stats.cost > 0 || cacheWaste.missedTokens > 0) {

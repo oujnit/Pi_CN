@@ -389,18 +389,18 @@ function formatDollars(value: number): string {
 }
 
 function formatCacheWarmingEconomics(decision: CacheWarmingDecision): string {
-	if (!decision.economicsAvailable) return "cache economics unavailable";
+	if (!decision.economicsAvailable) return "缓存经济性数据不可用";
 	const probability = Math.round(decision.continuationProbability * 100);
 	const probabilityText =
 		decision.phase === "streaming"
-			? `${probability}% continuation probability while agent is running`
-			: `${probability}% continuation probability`;
+			? `代理运行期间会话延续概率 ${probability}%`
+			: `会话延续概率 ${probability}%`;
 	const comparison = decision.action === "warm" ? ">=" : "<";
-	return `${probabilityText}, expected savings ${formatDollars(decision.expectedSavings)} ${comparison} $${CACHE_WARMING_MINIMUM_EXPECTED_SAVINGS.toFixed(3)}`;
+	return `${probabilityText}，预期节省 ${formatDollars(decision.expectedSavings)} ${comparison} $${CACHE_WARMING_MINIMUM_EXPECTED_SAVINGS.toFixed(3)}`;
 }
 
 function formatCacheWarmingDecisionTime(nextWarmAt: number | undefined, now: number): string {
-	if (nextWarmAt === undefined || nextWarmAt <= now) return "Decision now";
+	if (nextWarmAt === undefined || nextWarmAt <= now) return "即将决策";
 	let remainingSeconds = Math.ceil((nextWarmAt - now) / 1000);
 	const hours = Math.floor(remainingSeconds / 3600);
 	remainingSeconds %= 3600;
@@ -410,7 +410,7 @@ function formatCacheWarmingDecisionTime(nextWarmAt: number | undefined, now: num
 	if (hours > 0) parts.push(`${hours}h`);
 	if (minutes > 0) parts.push(`${minutes}m`);
 	if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-	return `Decision in ${parts.join(" ")}`;
+	return `${parts.join(" ")} 后决策`;
 }
 
 /** One-line status for `/session`. */
@@ -419,19 +419,19 @@ export function formatCacheWarmingStatus(status: CacheWarmingStatus, now = Date.
 	// A decision is attached once pi (or an extension) acted on it; "inactive"
 	// without one never got that far.
 	if (!decision || (status.state === "inactive" && !decision.economicsAvailable && !status.extensionOverride)) {
-		return `Inactive (${status.reason ?? "unknown reason"})`;
+		return `未激活（${status.reason ?? "原因未知"}）`;
 	}
 	const details = status.extensionOverride
-		? `extension override, ${formatCacheWarmingEconomics(decision)}`
+		? `扩展覆盖，${formatCacheWarmingEconomics(decision)}`
 		: `${formatCacheWarmingEconomics(decision)} -> ${decision.action}`;
-	if (status.state === "inactive") return `Stopped (${details})`;
-	if (status.state === "refreshing") return `Warming cache (${details})`;
-	return `${formatCacheWarmingDecisionTime(status.nextWarmAt, now)} (${details})`;
+	if (status.state === "inactive") return `已停止（${details}）`;
+	if (status.state === "refreshing") return `正在预热缓存（${details}）`;
+	return `${formatCacheWarmingDecisionTime(status.nextWarmAt, now)}（${details}）`;
 }
 
 /** One-line transcript text for persisted cache-warming usage. */
 export function formatCacheWarmingUsage(entry: UsageEntry): string {
 	const note = entry.note ? ` (${entry.note})` : "";
 	const cost = entry.usage.cost.total.toFixed(6).replace(/(\.\d{3}\d*?)0+$/, "$1");
-	return `Cache warmed${note}: $${cost}`;
+	return `缓存已预热${note}：$${cost}`;
 }

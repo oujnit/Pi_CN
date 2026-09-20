@@ -76,16 +76,16 @@ export async function copyToClipboard(text: string): Promise<void> {
 	if (!copied) {
 		if (p === "linux") {
 			if (process.env.TERMUX_VERSION) {
-				throw new Error("Clipboard unavailable: install the Termux:API app and `termux-api` package");
+				throw new Error("剪贴板不可用：请安装 Termux:API 应用和 `termux-api` 包");
 			}
 			if (process.env.WAYLAND_DISPLAY) {
-				throw new Error("Clipboard unavailable: install `wl-clipboard` (`wl-copy`) or check Wayland access");
+				throw new Error("剪贴板不可用：请安装 `wl-clipboard`（`wl-copy`）或检查 Wayland 访问权限");
 			}
 			if (process.env.DISPLAY) {
-				throw new Error("Clipboard unavailable: install `xclip` or `xsel`, or check X11 access");
+				throw new Error("剪贴板不可用：请安装 `xclip` 或 `xsel`，或检查 X11 访问权限");
 			}
-			throw new Error("Clipboard unavailable: no Wayland or X11 display detected");
+			throw new Error("剪贴板不可用：未检测到 Wayland 或 X11 显示服务");
 		}
-		throw new Error("Clipboard unavailable");
+		throw new Error("剪贴板不可用");
 	}
 }
