@@ -70,7 +70,7 @@ Pi 不内置用于限制文件系统、进程、网络或凭据访问的权限�
 **从源码构建汉化版**
 
 ```bash
-git clone https://github.com/oujnit/pi pi-zh && cd pi-zh
+git clone https://github.com/oujnit/Pi_CN.git pi-zh && cd pi-zh
 git checkout zh
 npm ci
 
