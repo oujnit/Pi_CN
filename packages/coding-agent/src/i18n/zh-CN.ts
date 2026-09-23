@@ -107,8 +107,7 @@ export const messages = {
 	"bug_report.export_as_zip": "导出为 Zip",
 	"bug_report.cancel": "取消",
 	"bug_report.p_export_the_report_as_a_zip": "{p0}\n\n改为将报告导出为 zip 压缩包？",
-	"bug_report.uploading_bug_reports_requires_online_mode":
-		"上传 bug 报告需要在线模式。请改用「导出为 Zip」。",
+	"bug_report.uploading_bug_reports_requires_online_mode": "上传 bug 报告需要在线模式。请改用「导出为 Zip」。",
 	"bug_report.report_a_bug": "报告 bug",
 	"bug_report.p_what_went_wrong_optional": "{p0}\n\n出了什么问题？（可选）",
 	"bug_report.include_the_session_transcript": "是否包含会话记录？",
