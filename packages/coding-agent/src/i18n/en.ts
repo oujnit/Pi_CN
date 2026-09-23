@@ -419,6 +419,8 @@ export const messages = {
 	"tree_selector.model_p": "[model: {p0}]",
 	"tree_selector.thinking_p": "[thinking: {p0}]",
 	"tree_selector.custom_p": "[custom: {p0}]",
+	"tree_selector.context_omit_p": "[context omit: {p0}]",
+	"tree_selector.context_replace_p": "[context replace: {p0}]",
 	"tree_selector.title": "[title: ",
 	"tree_selector.empty": "empty",
 	"tree_selector.grep_p_in_p": "[grep: /{p0}/ in {p1}]",

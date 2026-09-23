@@ -395,6 +395,8 @@ export const messages = {
 	"tree_selector.model_p": "[模型: {p0}]",
 	"tree_selector.thinking_p": "[思考: {p0}]",
 	"tree_selector.custom_p": "[自定义: {p0}]",
+	"tree_selector.context_omit_p": "[上下文省略: {p0}]",
+	"tree_selector.context_replace_p": "[上下文替换: {p0}]",
 	"tree_selector.title": "[标题: ",
 	"tree_selector.empty": "空",
 	"tree_selector.grep_p_in_p": "[grep: /{p0}/ 于 {p1}]",

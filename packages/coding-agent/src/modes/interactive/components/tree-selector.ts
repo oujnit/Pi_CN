@@ -846,7 +846,12 @@ class TreeList implements Component {
 				result = theme.fg("dim", t("tree_selector.custom_p", { p0: String(entry.customType) }));
 				break;
 			case "context_edit":
-				result = theme.fg("dim", `[context ${entry.replacement === null ? "omit" : "replace"}: ${entry.targetId}]`);
+				result = theme.fg(
+					"dim",
+					t(entry.replacement === null ? "tree_selector.context_omit_p" : "tree_selector.context_replace_p", {
+						p0: String(entry.targetId),
+					}),
+				);
 				break;
 			case "label":
 				result = theme.fg(
