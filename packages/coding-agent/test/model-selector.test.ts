@@ -103,4 +103,30 @@ describe("model selector", () => {
 			expect(rendered).toContain("Could not refresh 2 model catalogs (openai, anthropic); showing cached models.");
 		});
 	});
+
+	it("finds the default model with either Chinese or English search text", async () => {
+		harness = await createHarness({
+			models: [
+				{ id: "default-model", name: "Default Model", reasoning: true },
+				{ id: "other-model", name: "Other Model", reasoning: true },
+			],
+		});
+		const defaultModel = harness.getModel("default-model")!;
+		for (const query of ["默认", "default"]) {
+			const selector = new ModelSelectorComponent(
+				createFakeTui(),
+				defaultModel,
+				harness.session.modelRuntime,
+				[],
+				() => {},
+				() => {},
+				query,
+				undefined,
+				{ provider: defaultModel.provider, id: defaultModel.id },
+			);
+			const rendered = stripAnsi(selector.render(120).join("\n"));
+			expect(rendered).toContain(`default-model [${defaultModel.provider}]`);
+			selector.dispose();
+		}
+	});
 });

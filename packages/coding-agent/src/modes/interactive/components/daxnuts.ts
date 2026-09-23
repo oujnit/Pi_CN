@@ -1,3 +1,4 @@
+import { t } from "../../../i18n/index.ts";
 /**
  * POWERED BY DAXNUTS - Easter egg for OpenCode + Kimi K2.5
  *
@@ -97,7 +98,7 @@ export class DaxnutsComponent implements Component {
 			return this.cachedLines;
 		}
 
-		const t = theme;
+		const currentTheme = theme;
 		const lines: string[] = [];
 
 		const center = (s: string) => {
@@ -133,9 +134,9 @@ export class DaxnutsComponent implements Component {
 		// Fade in text after image is revealed
 		const textPhase = Math.max(0, this.tick - this.maxTicks * 0.6);
 		if (textPhase > 0 || this.tick >= this.maxTicks) {
-			lines.push(center(t.fg("accent", "通过 OpenCode Zen 免费用 Kimi K2.5")));
-			lines.push(center(t.fg("success", '"由 daxnuts 提供支持"')));
-			lines.push(center(t.fg("muted", "— @thdxr")));
+			lines.push(center(currentTheme.fg("accent", t("daxnuts.free_kimi_k_via_opencode_zen"))));
+			lines.push(center(currentTheme.fg("success", t("daxnuts.powered_by_daxnuts"))));
+			lines.push(center(currentTheme.fg("muted", "— @thdxr")));
 		} else {
 			lines.push("");
 			lines.push("");
@@ -144,8 +145,8 @@ export class DaxnutsComponent implements Component {
 
 		lines.push("");
 		if (textPhase > 2 || this.tick >= this.maxTicks) {
-			lines.push(center(t.fg("dim", "试试 OpenCode")));
-			lines.push(center(t.fg("mdLink", "https://mistral.ai/news/mistral-vibe-2-0")));
+			lines.push(center(currentTheme.fg("dim", t("daxnuts.try_opencode"))));
+			lines.push(center(currentTheme.fg("mdLink", "https://mistral.ai/news/mistral-vibe-2-0")));
 		} else {
 			lines.push("");
 			lines.push("");

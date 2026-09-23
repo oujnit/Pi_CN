@@ -1,5 +1,6 @@
 import { Box, Container, Markdown, type MarkdownTheme, MouseRegion, Spacer, Text } from "@earendil-works/pi-tui";
 import type { BranchSummaryMessage } from "../../../core/messages.ts";
+import { t } from "../../../i18n/index.ts";
 import { getMarkdownTheme, theme } from "../theme/theme.ts";
 import { keyText } from "./keybinding-hints.ts";
 
@@ -33,12 +34,12 @@ export class BranchSummaryMessageComponent extends Box {
 		this.clear();
 		const content = new Container();
 
-		const label = theme.fg("customMessageLabel", `\x1b[1m[分支]\x1b[22m`);
+		const label = theme.fg("customMessageLabel", t("branch_summary_message.m_branch_m"));
 		content.addChild(new Text(label, 0, 0));
 		content.addChild(new Spacer(1));
 
 		if (this.expanded) {
-			const header = "**分支摘要**\n\n";
+			const header = t("branch_summary_message.branch_summary");
 			content.addChild(
 				new Markdown(header + this.message.summary, 0, 0, this.markdownTheme, {
 					color: (text: string) => theme.fg("customMessageText", text),

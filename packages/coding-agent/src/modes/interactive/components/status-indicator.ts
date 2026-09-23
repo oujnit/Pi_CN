@@ -1,5 +1,6 @@
 import { type Component, Loader, type TUI, truncateToWidth } from "@earendil-works/pi-tui";
 import type { WorkingIndicatorOptions } from "../../../core/extensions/index.ts";
+import { t } from "../../../i18n/index.ts";
 import { theme } from "../theme/theme.ts";
 import { CountdownTimer } from "./countdown-timer.ts";
 import { keyText } from "./keybinding-hints.ts";
@@ -14,7 +15,7 @@ export class StatusIndicator extends Loader {
 		ui: TUI,
 		spinnerColorFn: (str: string) => string,
 		messageColorFn: (str: string) => string,
-		message: string,
+		message: string | (() => string),
 		indicator?: WorkingIndicatorOptions,
 	) {
 		super(ui, spinnerColorFn, messageColorFn, message, indicator);
@@ -36,7 +37,12 @@ export class StatusIndicator extends Loader {
 }
 
 export class WorkingStatusIndicator extends StatusIndicator {
-	constructor(ui: TUI, message: string, indicator?: WorkingIndicatorOptions, colorFn?: (text: string) => string) {
+	constructor(
+		ui: TUI,
+		message: string | (() => string),
+		indicator?: WorkingIndicatorOptions,
+		colorFn?: (text: string) => string,
+	) {
 		super(
 			"working",
 			ui,
@@ -52,20 +58,27 @@ export class RetryStatusIndicator extends StatusIndicator {
 	private countdown: CountdownTimer | undefined;
 
 	constructor(ui: TUI, attempt: number, maxAttempts: number, delayMs: number) {
+		let secondsRemaining = Math.ceil(delayMs / 1000);
 		const retryMessage = (seconds: number) =>
-			`${seconds} 秒后重试 (${attempt}/${maxAttempts})… (${keyText("app.interrupt")} 取消)`;
+			t("status_indicator.retrying_p_p_in_p_s_p", {
+				p0: String(attempt),
+				p1: String(maxAttempts),
+				p2: String(seconds),
+				p3: String(keyText("app.interrupt")),
+			});
 		super(
 			"retry",
 			ui,
 			(spinner) => theme.fg("warning", spinner),
 			(text) => theme.fg("muted", text),
-			retryMessage(Math.ceil(delayMs / 1000)),
+			() => retryMessage(secondsRemaining),
 		);
 		this.countdown = new CountdownTimer(
 			delayMs,
 			ui,
 			(seconds) => {
-				this.setMessage(retryMessage(seconds));
+				secondsRemaining = seconds;
+				this.setMessage(() => retryMessage(secondsRemaining));
 			},
 			() => {
 				this.countdown = undefined;
@@ -84,11 +97,15 @@ export type CompactionStatusReason = "manual" | "threshold" | "overflow";
 
 export class CompactionStatusIndicator extends StatusIndicator {
 	constructor(ui: TUI, reason: CompactionStatusReason) {
-		const cancelHint = `(${keyText("app.interrupt")} 取消)`;
-		const label =
-			reason === "manual"
-				? `正在压缩上下文… ${cancelHint}`
-				: `${reason === "overflow" ? "检测到上下文溢出，" : ""}自动压缩中… ${cancelHint}`;
+		const label = () => {
+			const cancelHint = t("status_indicator.p_to_cancel", { p0: String(keyText("app.interrupt")) });
+			return reason === "manual"
+				? t("status_indicator.compacting_context_p", { p0: String(cancelHint) })
+				: t("status_indicator.p_auto_compacting_p", {
+						p0: String(reason === "overflow" ? t("status_indicator.context_overflow_detected") : ""),
+						p1: String(cancelHint),
+					});
+		};
 		super(
 			"compaction",
 			ui,
@@ -106,7 +123,7 @@ export class BranchSummaryStatusIndicator extends StatusIndicator {
 			ui,
 			(spinner) => theme.fg("accent", spinner),
 			(text) => theme.fg("muted", text),
-			`正在生成分支摘要… (${keyText("app.interrupt")} 取消)`,
+			() => t("status_indicator.summarizing_branch_p_to_cancel", { p0: String(keyText("app.interrupt")) }),
 		);
 	}
 }

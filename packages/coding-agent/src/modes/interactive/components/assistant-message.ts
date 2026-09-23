@@ -1,6 +1,7 @@
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { Container, Markdown, type MarkdownTheme, MouseRegion, Spacer, Text } from "@earendil-works/pi-tui";
 import type { MarkdownTransformer } from "../../../core/extensions/types.ts";
+import { t } from "../../../i18n/index.ts";
 import { getMarkdownTheme, theme } from "../theme/theme.ts";
 import { createMarkdownTransform } from "./markdown-transform.ts";
 
@@ -181,19 +182,31 @@ export class AssistantMessageComponent extends Container {
 		this.hasToolCalls = hasToolCalls;
 		if (message.stopReason === "length") {
 			this.contentContainer.addChild(new Spacer(1));
-			this.contentContainer.addChild(new Text(theme.fg("error", "回复在完成前被截断。"), this.outputPad, 0));
+			this.contentContainer.addChild(
+				new Text(
+					() => theme.fg("error", t("assistant_message.response_was_truncated_before_completion")),
+					this.outputPad,
+					0,
+				),
+			);
 		} else if (!hasToolCalls) {
 			if (message.stopReason === "aborted") {
 				const abortMessage =
 					message.errorMessage && message.errorMessage !== "Request was aborted"
 						? message.errorMessage
-						: "操作已中止";
+						: t("assistant_message.operation_aborted");
 				this.contentContainer.addChild(new Spacer(1));
 				this.contentContainer.addChild(new Text(theme.fg("error", abortMessage), this.outputPad, 0));
 			} else if (message.stopReason === "error") {
-				const errorMsg = message.errorMessage || "未知错误";
+				const errorMsg = message.errorMessage || "Unknown error";
 				this.contentContainer.addChild(new Spacer(1));
-				this.contentContainer.addChild(new Text(theme.fg("error", `错误：${errorMsg}`), this.outputPad, 0));
+				this.contentContainer.addChild(
+					new Text(
+						() => theme.fg("error", t("assistant_message.error_p", { p0: String(errorMsg) })),
+						this.outputPad,
+						0,
+					),
+				);
 			}
 		}
 	}

@@ -363,13 +363,13 @@ export async function generateBugReportSummary(options: GenerateBugReportSummary
 		options.streamFn,
 		options.retry,
 	);
-	if (response.stopReason === "aborted") throw new Error("bug 报告摘要已取消");
-	const failure = getSummarizationFailure(response, "bug 报告摘要");
+	if (response.stopReason === "aborted") throw new Error("Bug report summary was cancelled");
+	const failure = getSummarizationFailure(response, "Bug report summary");
 	if (failure) throw new Error(failure);
 	if (response.content.some((block) => block.type === "toolCall")) {
-		throw new Error("bug 报告摘要试图调用工具");
+		throw new Error("Bug report summary attempted to call a tool");
 	}
 	const text = contentText(response.content).trim();
-	if (!text) throw new Error("bug 报告摘要为空");
+	if (!text) throw new Error("Bug report summary was empty");
 	return text;
 }

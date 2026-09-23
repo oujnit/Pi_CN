@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, zh]
   pull_request:
-    branches: [main]
+    branches: [main, zh]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -33,10 +33,10 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Build
-        run: npm run build
+        run: npm run build:zh
 
       - name: Check
         run: npm run check
 
       - name: Test
-        run: npm test
+        run: ./test.sh

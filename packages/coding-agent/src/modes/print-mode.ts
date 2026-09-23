@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.ts";
 /**
  * Print mode (single-shot): Send prompts, output result, exit.
  *
@@ -99,7 +100,9 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 				},
 			},
 			onError: (err) => {
-				console.error(`扩展错误（${err.extensionPath}）：${err.error}`);
+				console.error(
+					t("print_mode.extension_error_p_p", { p0: String(err.extensionPath), p1: String(err.error) }),
+				);
 			},
 		});
 
@@ -143,7 +146,7 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 			if (lastMessage?.role === "assistant") {
 				const assistantMsg = lastMessage as AssistantMessage;
 				if (assistantMsg.stopReason === "error" || assistantMsg.stopReason === "aborted") {
-					console.error(assistantMsg.errorMessage || `请求未完成（${assistantMsg.stopReason}）`);
+					console.error(assistantMsg.errorMessage || `Request ${assistantMsg.stopReason}`);
 					exitCode = 1;
 				} else {
 					for (const content of assistantMsg.content) {

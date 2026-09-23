@@ -4,6 +4,7 @@ import {
 	type ProjectTrustOption,
 	type ProjectTrustStoreEntry,
 } from "../../../core/trust-manager.ts";
+import { t } from "../../../i18n/index.ts";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 import { keyHint, rawKeyHint } from "./keybinding-hints.ts";
@@ -20,11 +21,11 @@ export interface TrustSelectorOptions {
 
 function formatDecision(trustPath: string | undefined, decision: ProjectTrustStoreEntry | null): string {
 	if (decision === null) {
-		return "无";
+		return t("trust_selector.none");
 	}
-	const label = decision.decision ? "已信任" : "未信任";
+	const label = decision.decision ? t("trust_selector.trusted") : t("trust_selector.untrusted");
 	if (trustPath !== undefined && decision.path !== trustPath) {
-		return `${label} (继承自 ${decision.path})`;
+		return t("trust_selector.p_inherited_from_p", { p0: String(label), p1: String(decision.path) });
 	}
 	return `${label} (${decision.path})`;
 }
@@ -51,20 +52,35 @@ export class TrustSelectorComponent extends Container {
 
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));
-		this.addChild(new Text(theme.fg("accent", theme.bold("项目信任")), 1, 0));
+		this.addChild(new Text(() => theme.fg("accent", theme.bold(t("trust_selector.project_trust"))), 1, 0));
 		this.addChild(new Text(theme.fg("muted", options.cwd), 1, 0));
 		this.addChild(new Spacer(1));
 		this.addChild(
 			new Text(
-				theme.fg(
-					"muted",
-					`已保存的决定：${formatDecision(this.trustOptions[0]?.savedPath, options.savedDecision)}`,
-				),
+				() =>
+					theme.fg(
+						"muted",
+						t("trust_selector.saved_decision_p", {
+							p0: String(formatDecision(this.trustOptions[0]?.savedPath, options.savedDecision)),
+						}),
+					),
 				1,
 				0,
 			),
 		);
-		this.addChild(new Text(theme.fg("muted", `当前会话：${options.projectTrusted ? "已信任" : "未信任"}`), 1, 0));
+		this.addChild(
+			new Text(
+				() =>
+					theme.fg(
+						"muted",
+						t("trust_selector.current_session_p", {
+							p0: String(options.projectTrusted ? t("trust_selector.trusted") : t("trust_selector.untrusted")),
+						}),
+					),
+				1,
+				0,
+			),
+		);
 		this.addChild(new Spacer(1));
 
 		this.listContainer = new Container();
@@ -72,11 +88,12 @@ export class TrustSelectorComponent extends Container {
 		this.addChild(new Spacer(1));
 		this.addChild(
 			new Text(
-				rawKeyHint("↑↓", "移动") +
+				() =>
+					rawKeyHint("↑↓", t("trust_selector.navigate")) +
 					"  " +
-					keyHint("tui.select.confirm", "保存") +
+					keyHint("tui.select.confirm", t("trust_selector.save")) +
 					"  " +
-					keyHint("tui.select.cancel", "取消"),
+					keyHint("tui.select.cancel", t("trust_selector.cancel")),
 				1,
 				0,
 			),

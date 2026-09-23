@@ -166,9 +166,9 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 			else if (event.type === "warning") notice("warning", event.message);
 			else if (event.type === "generation.failed") {
 				notice(event.reason === "overflow" ? "info" : "error", event.detail);
-			} else if (event.type === "compaction.failed") notice("error", `压缩失败：${event.detail}`);
+			} else if (event.type === "compaction.failed") notice("error", `Compaction failed: ${event.detail}`);
 			else if (event.type === "compaction.finished" && previousCompaction?.reason === "threshold") {
-				notice("info", "自动压缩完成。");
+				notice("info", "Automatic compaction completed.");
 			}
 		};
 
@@ -247,7 +247,7 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 				try {
 					const result = await refreshModelCatalogs(modelRuntime, controller.signal);
 					if (result.errors.size > 0) {
-						notice("warning", `无法刷新：${[...result.errors.keys()].join(", ")}`);
+						notice("warning", `Could not refresh: ${[...result.errors.keys()].join(", ")}`);
 					}
 				} finally {
 					clearTimeout(timeout);
@@ -265,7 +265,7 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 		};
 		const askAuth = (request: AuthPromptRequest, signal?: AbortSignal): Promise<string> => {
 			if (signal?.aborted) return Promise.reject(new Error("Login cancelled"));
-			clearPendingAuth(new Error("登录提示已替换"));
+			clearPendingAuth(new Error("Login prompt replaced"));
 			return new Promise<string>((resolve, reject) => {
 				const id = randomUUID();
 				const onAbort = (): void => {
@@ -301,10 +301,10 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 			cycleThinking: () =>
 				command(async () => {
 					const ref = modelRef(state.conversation.config.model);
-					if (!ref) throw new Error("未选择模型");
+					if (!ref) throw new Error("No model selected");
 					const model = modelRuntime.getModel(ref.provider, ref.modelId);
-					if (!model) throw new Error("当前模型不可用");
-					if (!model.reasoning) throw new Error("当前模型不支持思考");
+					if (!model) throw new Error("Current model is unavailable");
+					if (!model.reasoning) throw new Error("Current model does not support thinking");
 					const levels = getSupportedThinkingLevels(model);
 					const current = String(state.conversation.config.thinkingLevel ?? "off");
 					const index = levels.indexOf(current as ModelThinkingLevel);
@@ -314,7 +314,7 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 			setModel: (ref) =>
 				command(async () => {
 					const model = modelRuntime.getModel(ref.provider, ref.modelId);
-					if (!model) throw new Error(`未知模型：${ref.provider}/${ref.modelId}`);
+					if (!model) throw new Error(`Unknown model: ${ref.provider}/${ref.modelId}`);
 					const compact = settings.getCompactionSettings(model);
 					const currentThinking = String(state.conversation.config.thinkingLevel ?? "off") as ModelThinkingLevel;
 					await root.config.set(
@@ -330,13 +330,13 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 			refreshModels,
 			login: (providerId, authType) =>
 				command(async () => {
-					if (loginController) throw new Error("已有登录正在进行");
+					if (loginController) throw new Error("A login is already running");
 					const account = state.models.accounts.find(
 						(candidate) => candidate.id === providerId && candidate.authType === authType,
 					);
-					if (!account) throw new Error(`未知登录方式：${providerId}/${authType}`);
+					if (!account) throw new Error(`Unknown login method: ${providerId}/${authType}`);
 					if (!account.interactive)
-						throw new Error(`${account.methodName ?? "认证"} 需在 pi 外部配置`);
+						throw new Error(`${account.methodName ?? "Authentication"} is configured outside pi`);
 					loginController = new AbortController();
 					update({
 						auth: { providerId, providerName: account.name, authType, notices: [] },
@@ -347,9 +347,9 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 							prompt: ({ signal, ...request }: AuthPrompt) => askAuth(request, signal),
 							notify: addAuthNotice,
 						});
-						notice("info", `已登录 ${account.name}。`);
+						notice("info", `Logged in to ${account.name}.`);
 					} finally {
-						clearPendingAuth(new Error("登录完成"));
+						clearPendingAuth(new Error("Login finished"));
 						loginController = undefined;
 						update({ auth: undefined, models: readModelsView(modelRuntime, false) });
 					}
@@ -374,7 +374,7 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 
 		const configuredModel = modelRef(state.conversation.config.model);
 		if (configuredModel && !modelRuntime.getModel(configuredModel.provider, configuredModel.modelId)) {
-			notice("warning", `已保存的模型不可用：${configuredModel.provider}/${configuredModel.modelId}`);
+			notice("warning", `Saved model is unavailable: ${configuredModel.provider}/${configuredModel.modelId}`);
 		}
 		harness.resume();
 
@@ -390,9 +390,9 @@ export async function openMicro(options: OpenMicroOptions = {}): Promise<OpenMic
 			async close() {
 				if (closed) return;
 				closed = true;
-				for (const controller of modelRefreshControllers) controller.abort(new Error("Micro 已关闭"));
-				loginController?.abort(new Error("Micro 已关闭"));
-				clearPendingAuth(new Error("Micro 已关闭"));
+				for (const controller of modelRefreshControllers) controller.abort(new Error("Micro closed"));
+				loginController?.abort(new Error("Micro closed"));
+				clearPendingAuth(new Error("Micro closed"));
 				watch.stop();
 				await harness.close(BACKGROUND_CONTEXT).catch(() => {});
 				await env.cleanup(BACKGROUND_CONTEXT).catch(() => {});

@@ -4,6 +4,7 @@ import type { AgentSession } from "../../../core/agent-session.ts";
 import { areExperimentalFeaturesEnabled } from "../../../core/experimental.ts";
 import type { ReadonlyFooterDataProvider } from "../../../core/footer-data-provider.ts";
 import { addUsageToTotals, createUsageTotals } from "../../../core/usage-totals.ts";
+import { t } from "../../../i18n/index.ts";
 import { theme } from "../theme/theme.ts";
 
 /**
@@ -142,13 +143,13 @@ export class FooterComponent implements Component {
 			? state.model.provider === "kimi-coding" || this.session.modelRuntime.isUsingSubscription(state.model.provider)
 			: false;
 		if (usageTotals.cost || usingSubscription) {
-			const costStr = `$${usageTotals.cost.toFixed(3)}${usingSubscription ? " (订阅)" : ""}`;
+			const costStr = `$${usageTotals.cost.toFixed(3)}${usingSubscription ? t("footer.sub") : ""}`;
 			statsParts.push(costStr);
 		}
 
 		// Colorize context percentage based on usage
 		let contextPercentStr: string;
-		const autoIndicator = this.autoCompactEnabled ? " (自动)" : "";
+		const autoIndicator = this.autoCompactEnabled ? t("footer.auto") : "";
 		const contextPercentDisplay =
 			contextPercent === "?"
 				? `?/${formatTokens(contextWindow)}${autoIndicator}`
@@ -186,7 +187,9 @@ export class FooterComponent implements Component {
 		if (state.model?.reasoning) {
 			const thinkingLevel = state.thinkingLevel || "off";
 			rightSideWithoutProvider =
-				thinkingLevel === "off" ? `${modelName} • 思考关闭` : `${modelName} • ${thinkingLevel}`;
+				thinkingLevel === "off"
+					? t("footer.p_thinking_off", { p0: String(modelName) })
+					: `${modelName} • ${thinkingLevel}`;
 		}
 
 		// Prepend the provider in parentheses if there are multiple providers and there's enough room

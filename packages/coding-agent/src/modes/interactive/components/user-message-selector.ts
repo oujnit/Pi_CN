@@ -1,4 +1,5 @@
 import { type Component, Container, getKeybindings, Spacer, Text, truncateToWidth } from "@earendil-works/pi-tui";
+import { t } from "../../../i18n/index.ts";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 
@@ -34,7 +35,7 @@ class UserMessageList implements Component {
 		const lines: string[] = [];
 
 		if (this.messages.length === 0) {
-			lines.push(theme.fg("muted", "  没有找到用户消息"));
+			lines.push(theme.fg("muted", t("user_message_selector.no_user_messages_found")));
 			return lines;
 		}
 
@@ -63,7 +64,10 @@ class UserMessageList implements Component {
 
 			// Second line: metadata (position in history)
 			const position = i + 1;
-			const metadata = `  第 ${position} 条，共 ${this.messages.length} 条`;
+			const metadata = t("user_message_selector.message_p_of_p", {
+				p0: String(position),
+				p1: String(this.messages.length),
+			});
 			const metadataLine = theme.fg("muted", metadata);
 			lines.push(metadataLine);
 			lines.push(""); // Blank line between messages
@@ -120,8 +124,10 @@ export class UserMessageSelectorComponent extends Container {
 
 		// Add header
 		this.addChild(new Spacer(1));
-		this.addChild(new Text(theme.bold("从消息派生"), 1, 0));
-		this.addChild(new Text(theme.fg("muted", "选择一条用户消息，将其之前的活跃路径复制到新会话中"), 1, 0));
+		this.addChild(new Text(() => theme.bold(t("user_message_selector.fork_from_message")), 1, 0));
+		this.addChild(
+			new Text(() => theme.fg("muted", t("user_message_selector.select_a_user_message_to_copy_the")), 1, 0),
+		);
 		this.addChild(new Spacer(1));
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));

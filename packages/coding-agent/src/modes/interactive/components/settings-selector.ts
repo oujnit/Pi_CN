@@ -21,6 +21,7 @@ import {
 	type TuiMode,
 	type WarningSettings,
 } from "../../../core/settings-manager.ts";
+import { type Language, LanguageContext, t } from "../../../i18n/index.ts";
 import { getSettingsListTheme, parseAutoThemeSetting, type TerminalTheme, theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 import { keyDisplayText } from "./keybinding-hints.ts";
@@ -28,27 +29,30 @@ import { SelectSubmenu, SteppedSubmenu, type SteppedSubmenuStep } from "./settin
 
 const MODEL_PICKER_LAYOUT = { minPrimaryColumnWidth: 12, maxPrimaryColumnWidth: 46 };
 
-const THINKING_DESCRIPTIONS: Record<ThinkingLevel, string> = {
-	off: "不推理",
-	minimal: "极简推理（约 1k token）",
-	low: "轻度推理（约 2k token）",
-	medium: "中度推理（约 8k token）",
-	high: "深度推理（约 16k token）",
-	xhigh: "超高推理（约 32k token）",
-	max: "最大推理",
+const thinkingDescription = (level: ThinkingLevel): string => {
+	const keys = {
+		off: "settings_selector.no_reasoning",
+		minimal: "settings_selector.very_brief_reasoning_k_tokens",
+		low: "settings_selector.light_reasoning_k_tokens",
+		medium: "settings_selector.moderate_reasoning_k_tokens",
+		high: "settings_selector.deep_reasoning_k_tokens",
+		xhigh: "settings_selector.extra_high_reasoning_k_tokens",
+		max: "settings_selector.maximum_reasoning",
+	} as const;
+	return t(keys[level]);
 };
 
-const DEFAULT_PROJECT_TRUST_LABELS: Record<DefaultProjectTrust, string> = {
-	ask: "每次询问",
-	always: "始终信任",
-	never: "永不信任",
+const defaultProjectTrustLabel = (value: DefaultProjectTrust): string => {
+	const keys = {
+		ask: "settings_selector.ask",
+		always: "settings_selector.always_trust",
+		never: "settings_selector.never_trust",
+	} as const;
+	return t(keys[value]);
 };
-
-const DEFAULT_PROJECT_TRUST_BY_LABEL = new Map(
-	Object.entries(DEFAULT_PROJECT_TRUST_LABELS).map(([value, label]) => [label, value as DefaultProjectTrust]),
-);
 
 export interface SettingsConfig {
+	language: Language;
 	autoCompact: boolean;
 	defaultModel: string;
 	currentModel?: Model<any>;
@@ -92,6 +96,7 @@ export interface SettingsConfig {
 }
 
 export interface SettingsCallbacks {
+	onLanguageChange: (language: Language) => void;
 	onAutoCompactChange: (enabled: boolean) => void;
 	onShowImagesChange: (enabled: boolean) => void;
 	onImageWidthCellsChange: (width: number) => void;
@@ -145,8 +150,12 @@ class WarningSettingsSubmenu extends Container {
 		const items: SettingItem[] = [
 			{
 				id: "anthropic-extra-usage",
-				label: "Anthropic 额外用量",
-				description: "当 Anthropic 订阅认证可能使用付费额外用量时提醒",
+				get label() {
+					return t("settings_selector.anthropic_extra_usage");
+				},
+				get description() {
+					return t("settings_selector.warn_when_anthropic_subscription_auth_may_use");
+				},
 				currentValue: (this.state.anthropicExtraUsage ?? true) ? "true" : "false",
 				values: ["true", "false"],
 			},
@@ -187,8 +196,8 @@ function modelDisplayLabel(model: Model<any>): string {
 
 function modelThinkingOverridesSummary(overrides: Record<string, ThinkingLevel>): string {
 	const count = Object.keys(overrides).length;
-	if (count === 0) return "无";
-	return `已配置 ${count} 项`;
+	if (count === 0) return t("settings_selector.none");
+	return t("settings_selector.p_configured", { p0: String(count) });
 }
 
 function modelItemLabel(model: Model<any>): string {
@@ -208,8 +217,12 @@ function singleModeThemeItems(availableThemes: string[], currentTheme: string): 
 	return [
 		{
 			value: AUTOMATIC_THEME_VALUE,
-			label: "  自动",
-			description: "为终端的浅色/深色外观使用不同主题",
+			get label() {
+				return t("settings_selector.automatic");
+			},
+			get description() {
+				return t("settings_selector.use_separate_themes_for_light_and_dark");
+			},
 		},
 		...themeItems(availableThemes, currentTheme),
 	];
@@ -290,8 +303,8 @@ class ThemeSubmenu extends Container {
 	private showSingleMenu(): void {
 		this.mode = "single";
 		const menu = new SelectSubmenu(
-			"主题",
-			"选择主题，或选择「自动」以跟随终端外观。",
+			t("settings_selector.theme"),
+			t("settings_selector.select_a_theme_or_choose_automatic_to"),
 			singleModeThemeItems(this.availableThemes, this.singleTheme),
 			this.singleTheme,
 			(value) => {
@@ -316,50 +329,82 @@ class ThemeSubmenu extends Container {
 	private showAutomaticMenu(): void {
 		this.mode = "automatic";
 		const content = new Container();
-		content.addChild(new Text(theme.bold(theme.fg("accent", "自动主题")), 0, 0));
+		content.addChild(new Text(() => theme.bold(theme.fg("accent", t("settings_selector.automatic_theme"))), 0, 0));
 		content.addChild(new Spacer(1));
-		content.addChild(new Text(theme.fg("muted", "为终端的浅色与深色外观分别选择主题。"), 0, 0));
-		content.addChild(new Text(theme.fg("muted", "浅色/深色检测需要终端支持。"), 0, 0));
+		content.addChild(
+			new Text(() => theme.fg("muted", t("settings_selector.choose_themes_for_terminal_light_and_dark")), 0, 0),
+		);
+		content.addChild(
+			new Text(() => theme.fg("muted", t("settings_selector.light_dark_detection_requires_terminal_support")), 0, 0),
+		);
 		content.addChild(new Spacer(1));
 
 		const items: SettingItem[] = [
 			{
 				id: "light-theme",
-				label: "浅色主题",
-				description: "自动模式下终端为浅色时使用的主题",
+				get label() {
+					return t("settings_selector.light_theme");
+				},
+				get description() {
+					return t("settings_selector.theme_to_use_in_automatic_mode_when");
+				},
 				currentValue: this.lightTheme,
 				submenu: (currentValue, done) =>
-					this.createThemeSelect("浅色主题", "选择浅色终端外观使用的主题", currentValue, done, (value) => {
-						this.lightTheme = value;
-						this.callbacks.onThemePreview?.(this.getThemeSetting());
-						done(value);
-					}),
+					this.createThemeSelect(
+						t("settings_selector.light_theme_2"),
+						t("settings_selector.select_the_theme_to_use_for_light"),
+						currentValue,
+						done,
+						(value) => {
+							this.lightTheme = value;
+							this.callbacks.onThemePreview?.(this.getThemeSetting());
+							done(value);
+						},
+					),
 			},
 			{
 				id: "dark-theme",
-				label: "深色主题",
-				description: "自动模式下终端为深色时使用的主题",
+				get label() {
+					return t("settings_selector.dark_theme");
+				},
+				get description() {
+					return t("settings_selector.theme_to_use_in_automatic_mode_when_2");
+				},
 				currentValue: this.darkTheme,
 				submenu: (currentValue, done) =>
-					this.createThemeSelect("深色主题", "选择深色终端外观使用的主题", currentValue, done, (value) => {
-						this.darkTheme = value;
-						this.callbacks.onThemePreview?.(this.getThemeSetting());
-						done(value);
-					}),
+					this.createThemeSelect(
+						t("settings_selector.dark_theme_2"),
+						t("settings_selector.select_the_theme_to_use_for_dark"),
+						currentValue,
+						done,
+						(value) => {
+							this.darkTheme = value;
+							this.callbacks.onThemePreview?.(this.getThemeSetting());
+							done(value);
+						},
+					),
 			},
 			{
 				id: "apply",
-				label: "应用",
-				description: "保存并返回",
-				currentValue: "保存并返回",
-				values: ["保存并返回"],
+				get label() {
+					return t("settings_selector.apply");
+				},
+				get description() {
+					return t("settings_selector.save_and_go_back");
+				},
+				currentValue: "save and go back",
+				values: [t("settings_selector.save_and_go_back_2")],
 			},
 			{
 				id: "single-mode",
-				label: "切换模式",
-				description: "改为浅色与深色共用一个主题",
-				currentValue: "改为单一主题",
-				values: ["改为单一主题"],
+				get label() {
+					return t("settings_selector.change_mode");
+				},
+				get description() {
+					return t("settings_selector.switch_to_one_theme_for_light_and");
+				},
+				currentValue: "switch to single theme",
+				values: [t("settings_selector.switch_to_single_theme")],
 			},
 		];
 
@@ -451,117 +496,204 @@ export class SettingsSelectorComponent extends Container {
 
 		const items: SettingItem[] = [
 			{
+				id: "language",
+				get label() {
+					return t("settings.language");
+				},
+				get description() {
+					return t("settings.language_description");
+				},
+				currentValue: config.language,
+				values: ["zh-CN", "en"],
+				valueLabels: {
+					"zh-CN": () => t("settings.language_zh"),
+					en: () => t("settings.language_en"),
+				},
+			},
+			{
 				id: "autocompact",
-				label: "自动压缩",
-				description: "上下文过大时自动进行压缩",
+				get label() {
+					return t("settings_selector.auto_compact");
+				},
+				get description() {
+					return t("settings_selector.automatically_compact_context_when_it_gets_too");
+				},
 				currentValue: config.autoCompact ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
 				id: "steering-mode",
-				label: "引导模式",
-				description:
-					"流式输出期间按回车会将引导消息加入队列。one-at-a-time：每次投递一条并等待回复。all：一次性全部投递。",
+				get label() {
+					return t("settings_selector.steering_mode");
+				},
+				get description() {
+					return t("settings_selector.enter_while_streaming_queues_steering_messages_one");
+				},
 				currentValue: config.steeringMode,
 				values: ["one-at-a-time", "all"],
 			},
 			{
 				id: "follow-up-mode",
-				label: "跟进模式",
-				description: `${followUpKey} 会将跟进消息排队，待本轮运行结束后投递。one-at-a-time：每次投递一条并等待回复。all：一次性全部投递。`,
+				get label() {
+					return t("settings_selector.follow_up_mode");
+				},
+				get description() {
+					return t("settings_selector.p_queues_follow_up_messages_until_agent", { p0: String(followUpKey) });
+				},
 				currentValue: config.followUpMode,
 				values: ["one-at-a-time", "all"],
 			},
 			{
 				id: "transport",
-				label: "传输协议",
-				description: "支持多种传输方式的供应商的首选传输方式",
+				get label() {
+					return t("settings_selector.transport");
+				},
+				get description() {
+					return t("settings_selector.preferred_transport_for_providers_that_support_multiple");
+				},
 				currentValue: config.transport,
 				values: ["sse", "websocket", "websocket-cached", "auto"],
 			},
 			{
 				id: "http-idle-timeout",
-				label: "HTTP 空闲超时",
-				description: "等待 HTTP 响应头或响应体分块时的最大空闲间隔。本地模型停顿可能超过五分钟时可将其禁用。",
+				get label() {
+					return t("settings_selector.http_idle_timeout");
+				},
+				get description() {
+					return t("settings_selector.maximum_idle_gap_while_waiting_for_http");
+				},
 				currentValue: formatHttpIdleTimeoutMs(config.httpIdleTimeoutMs),
 				values: HTTP_IDLE_TIMEOUT_CHOICES.map((choice) => choice.label),
 			},
 			{
 				id: "cache-warming-mode",
-				label: "Cache warming",
-				description:
-					"off; streaming while the agent runs; idle also between runs while continuation stays profitable",
+				get label() {
+					return t("settings.cache_warming");
+				},
+				get description() {
+					return t("settings.cache_warming_description");
+				},
 				currentValue: config.cacheWarmingMode,
 				values: [...CACHE_WARMING_MODES],
+				valueLabels: {
+					off: () => t("settings.cache_off"),
+					streaming: () => t("settings.cache_streaming"),
+					idle: () => t("settings.cache_idle"),
+				},
 			},
 			{
 				id: "hide-thinking",
-				label: "隐藏思考",
-				description: "隐藏助手回复中的思考内容块",
+				get label() {
+					return t("settings_selector.hide_thinking");
+				},
+				get description() {
+					return t("settings_selector.hide_thinking_blocks_in_assistant_responses");
+				},
 				currentValue: config.hideThinkingBlock ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
 				id: "mermaid-rendering",
-				label: "Mermaid 图表",
-				description: "将 Mermaid 代码块渲染为 Unicode 图形",
+				get label() {
+					return t("settings_selector.mermaid_diagrams");
+				},
+				get description() {
+					return t("settings_selector.render_mermaid_code_blocks_as_unicode_diagrams");
+				},
 				currentValue: config.mermaidRenderingMode,
 				values: ["off", "final", "streaming"],
 			},
 			{
 				id: "cache-miss-notices",
-				label: "缓存未命中提示",
-				description: "在会话记录中显示缓存费用与供应商恢复的诊断提示",
+				get label() {
+					return t("settings_selector.cache_miss_notices");
+				},
+				get description() {
+					return t("settings_selector.show_transcript_notices_for_cache_costs_and");
+				},
 				currentValue: config.showCacheMissNotices ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
 				id: "collapse-changelog",
-				label: "折叠更新日志",
-				description: "更新后显示精简版更新日志",
+				get label() {
+					return t("settings_selector.collapse_changelog");
+				},
+				get description() {
+					return t("settings_selector.show_condensed_changelog_after_updates");
+				},
 				currentValue: config.collapseChangelog ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
 				id: "quiet-startup",
-				label: "静默启动",
-				description: "启动时不输出详细日志",
+				get label() {
+					return t("settings_selector.quiet_startup");
+				},
+				get description() {
+					return t("settings_selector.disable_verbose_printing_at_startup");
+				},
 				currentValue: config.quietStartup ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
 				id: "install-telemetry",
-				label: "安装遥测",
-				description: "通过更新日志检测到更新后，发送匿名的版本/更新上报",
+				get label() {
+					return t("settings_selector.install_telemetry");
+				},
+				get description() {
+					return t("settings_selector.send_an_anonymous_version_update_ping_after");
+				},
 				currentValue: config.enableInstallTelemetry ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
 				id: "default-project-trust",
-				label: "默认项目信任",
-				description: "在没有扩展或已保存的信任决定时，项目信任采用的回退行为",
-				currentValue: DEFAULT_PROJECT_TRUST_LABELS[config.defaultProjectTrust],
-				values: Object.values(DEFAULT_PROJECT_TRUST_LABELS),
+				get label() {
+					return t("settings_selector.default_project_trust");
+				},
+				get description() {
+					return t("settings_selector.fallback_behavior_when_no_extension_or_saved");
+				},
+				currentValue: config.defaultProjectTrust,
+				values: ["ask", "always", "never"],
+				valueLabels: {
+					ask: () => defaultProjectTrustLabel("ask"),
+					always: () => defaultProjectTrustLabel("always"),
+					never: () => defaultProjectTrustLabel("never"),
+				},
 			},
 			{
 				id: "double-escape-action",
-				label: "双击 Escape 动作",
-				description: "编辑器为空时连按两次 Escape 执行的动作",
+				get label() {
+					return t("settings_selector.double_escape_action");
+				},
+				get description() {
+					return t("settings_selector.action_when_pressing_escape_twice_with_empty");
+				},
 				currentValue: config.doubleEscapeAction,
 				values: ["tree", "fork", "none"],
 			},
 			{
 				id: "tree-filter-mode",
-				label: "会话树过滤模式",
-				description: "打开 /tree 时的默认过滤器",
+				get label() {
+					return t("settings_selector.tree_filter_mode");
+				},
+				get description() {
+					return t("settings_selector.default_filter_when_opening_tree");
+				},
 				currentValue: config.treeFilterMode,
 				values: ["default", "no-tools", "user-only", "labeled-only", "all"],
 			},
 			{
 				id: "warnings",
-				label: "警告",
-				description: "启用或禁用单项警告",
-				currentValue: "去配置",
+				get label() {
+					return t("settings_selector.warnings");
+				},
+				get description() {
+					return t("settings_selector.enable_or_disable_individual_warnings");
+				},
+				currentValue: "configure",
 				submenu: (_currentValue, done) =>
 					new WarningSettingsSubmenu(
 						currentWarnings,
@@ -574,15 +706,25 @@ export class SettingsSelectorComponent extends Container {
 			},
 			{
 				id: "model-thinking",
-				label: "各模型的默认思考级别",
-				description: `为特定模型覆盖默认思考级别。${cycleThinkingKey} 可在会话中循环切换。`,
+				get label() {
+					return t("settings_selector.default_thinking_level_per_model");
+				},
+				get description() {
+					return t("settings_selector.override_the_default_thinking_level_for_specific", {
+						p0: String(cycleThinkingKey),
+					});
+				},
 				currentValue: modelThinkingOverridesSummary(currentModelThinkingLevels),
 				submenu: (_currentValue, done) => {
 					const steps: SteppedSubmenuStep[] = [
 						{
 							key: "model",
-							title: "按模型设置思考级别",
-							description: "选择要配置的模型",
+							get title() {
+								return t("settings_selector.per_model_thinking_level");
+							},
+							get description() {
+								return t("settings_selector.select_a_model_to_configure");
+							},
 							options: () => {
 								const sorted = [...config.availableDefaultModels].sort((a, b) => {
 									const aKey = modelSettingKey(a);
@@ -605,8 +747,12 @@ export class SettingsSelectorComponent extends Container {
 								if (items.length === 0) {
 									items.push({
 										value: "__none__",
-										label: "没有可用模型",
-										description: "请先登录供应商或配置 API 密钥",
+										get label() {
+											return t("settings_selector.no_models_available");
+										},
+										get description() {
+											return t("settings_selector.log_in_to_a_provider_or_configure");
+										},
 									});
 								}
 								return items;
@@ -619,9 +765,13 @@ export class SettingsSelectorComponent extends Container {
 							key: "level",
 							title: (ctx) => {
 								const m = defaultModelByValue.get(ctx.model);
-								return `${m ? modelDisplayLabel(m) : ctx.model} 的思考级别`;
+								return t("settings_selector.thinking_level_for_p", {
+									p0: String(m ? modelDisplayLabel(m) : ctx.model),
+								});
 							},
-							description: "选择该模型的默认思考级别",
+							get description() {
+								return t("settings_selector.select_default_thinking_level_for_this_model");
+							},
 							options: (ctx) => {
 								const model = defaultModelByValue.get(ctx.model);
 								if (!model) return [];
@@ -632,13 +782,19 @@ export class SettingsSelectorComponent extends Container {
 								const items: SelectItem[] = levels.map((level) => ({
 									value: level,
 									label: `${level === activeLevel ? "✓ " : "  "}${level}`,
-									description: THINKING_DESCRIPTIONS[level],
+									description: thinkingDescription(level),
 								}));
 								if (currentModelThinkingLevels[ctx.model] !== undefined) {
 									items.push({
 										value: CLEAR_OVERRIDE_VALUE,
-										label: "  （清除覆盖）",
-										description: `恢复为全局默认（${config.thinkingLevel}）`,
+										get label() {
+											return t("settings_selector.clear_override");
+										},
+										get description() {
+											return t("settings_selector.revert_to_global_default_p", {
+												p0: String(config.thinkingLevel),
+											});
+										},
 									});
 								}
 								return items;
@@ -675,36 +831,56 @@ export class SettingsSelectorComponent extends Container {
 			},
 			{
 				id: "tui-mode",
-				label: "TUI 模式",
-				description: "界面布局；全屏模式为实验性功能",
+				get label() {
+					return t("settings_selector.tui_mode");
+				},
+				get description() {
+					return t("settings_selector.interface_layout_fullscreen_mode_is_experimental");
+				},
 				currentValue: config.tuiMode,
 				values: ["regular", "fullscreen"],
 			},
 			{
 				id: "fullscreen-exit-output",
-				label: "全屏退出输出",
-				description: "退出全屏模式时输出完整会话记录，或仅显示会话恢复提示",
+				get label() {
+					return t("settings_selector.fullscreen_exit_output");
+				},
+				get description() {
+					return t("settings_selector.print_the_transcript_or_only_a_session");
+				},
 				currentValue: config.fullscreenExitOutput,
 				values: ["transcript", "resume-hint"],
 			},
 			{
 				id: "fullscreen-scrollbar",
-				label: "全屏滚动条",
-				description: "全屏模式下的滚动条行为；普通模式下无效",
+				get label() {
+					return t("settings_selector.fullscreen_scrollbar");
+				},
+				get description() {
+					return t("settings_selector.scrollbar_behavior_in_fullscreen_mode_has_no");
+				},
 				currentValue: config.fullscreenScrollbar,
 				values: ["auto", "always", "hidden"],
 			},
 			{
 				id: "fullscreen-copy-on-select",
-				label: "全屏选中即复制",
-				description: "全屏模式下自动复制选中的文本；禁用后可用 Ctrl+X 复制所选内容",
+				get label() {
+					return t("settings_selector.fullscreen_copy_on_select");
+				},
+				get description() {
+					return t("settings_selector.automatically_copy_selected_text_in_fullscreen_mode");
+				},
 				currentValue: config.fullscreenCopyOnSelect ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
 				id: "theme",
-				label: "主题",
-				description: "界面的配色主题",
+				get label() {
+					return t("settings_selector.theme");
+				},
+				get description() {
+					return t("settings_selector.color_theme_for_the_interface");
+				},
 				currentValue: config.currentTheme,
 				submenu: (currentValue, done) =>
 					new ThemeSubmenu(currentValue, config.terminalTheme, config.availableThemes, callbacks, done),
@@ -716,15 +892,23 @@ export class SettingsSelectorComponent extends Container {
 			// Insert after autocompact
 			items.splice(1, 0, {
 				id: "show-images",
-				label: "显示图片",
-				description: "在终端中内联渲染图片",
+				get label() {
+					return t("settings_selector.show_images");
+				},
+				get description() {
+					return t("settings_selector.render_images_inline_in_terminal");
+				},
 				currentValue: config.showImages ? "true" : "false",
 				values: ["true", "false"],
 			});
 			items.splice(2, 0, {
 				id: "image-width-cells",
-				label: "图片宽度",
-				description: "内联图片的首选宽度（按终端字符格数计）",
+				get label() {
+					return t("settings_selector.image_width");
+				},
+				get description() {
+					return t("settings_selector.preferred_inline_image_width_in_terminal_cells");
+				},
 				currentValue: String(config.imageWidthCells),
 				values: ["60", "80", "120"],
 			});
@@ -733,8 +917,12 @@ export class SettingsSelectorComponent extends Container {
 		// Image auto-resize toggle (always available, affects both attached and read images)
 		items.splice(supportsImages ? 3 : 1, 0, {
 			id: "auto-resize-images",
-			label: "自动调整图片大小",
-			description: "将大图缩至最大 2000x2000，以提升模型兼容性",
+			get label() {
+				return t("settings_selector.auto_resize_images");
+			},
+			get description() {
+				return t("settings_selector.resize_large_images_to_x_max_for");
+			},
 			currentValue: config.autoResizeImages ? "true" : "false",
 			values: ["true", "false"],
 		});
@@ -743,8 +931,12 @@ export class SettingsSelectorComponent extends Container {
 		const autoResizeIndex = items.findIndex((item) => item.id === "auto-resize-images");
 		items.splice(autoResizeIndex + 1, 0, {
 			id: "block-images",
-			label: "屏蔽图片",
-			description: "阻止图片发送给 LLM 供应商",
+			get label() {
+				return t("settings_selector.block_images");
+			},
+			get description() {
+				return t("settings_selector.prevent_images_from_being_sent_to_llm");
+			},
 			currentValue: config.blockImages ? "true" : "false",
 			values: ["true", "false"],
 		});
@@ -753,8 +945,12 @@ export class SettingsSelectorComponent extends Container {
 		const blockImagesIndex = items.findIndex((item) => item.id === "block-images");
 		items.splice(blockImagesIndex + 1, 0, {
 			id: "skill-commands",
-			label: "技能命令",
-			description: "将技能注册为 /skill:name 命令",
+			get label() {
+				return t("settings_selector.skill_commands");
+			},
+			get description() {
+				return t("settings_selector.register_skills_as_skill_name_commands");
+			},
 			currentValue: config.enableSkillCommands ? "true" : "false",
 			values: ["true", "false"],
 		});
@@ -763,8 +959,12 @@ export class SettingsSelectorComponent extends Container {
 		const skillCommandsIndex = items.findIndex((item) => item.id === "skill-commands");
 		items.splice(skillCommandsIndex + 1, 0, {
 			id: "show-hardware-cursor",
-			label: "显示硬件光标",
-			description: "显示终端光标，同时仍为其定位以支持输入法",
+			get label() {
+				return t("settings_selector.show_hardware_cursor");
+			},
+			get description() {
+				return t("settings_selector.show_the_terminal_cursor_while_still_positioning");
+			},
 			currentValue: config.showHardwareCursor ? "true" : "false",
 			values: ["true", "false"],
 		});
@@ -773,8 +973,12 @@ export class SettingsSelectorComponent extends Container {
 		const hardwareCursorIndex = items.findIndex((item) => item.id === "show-hardware-cursor");
 		items.splice(hardwareCursorIndex + 1, 0, {
 			id: "editor-padding",
-			label: "编辑器内边距",
-			description: "输入编辑器的水平内边距（0-3）",
+			get label() {
+				return t("settings_selector.editor_padding");
+			},
+			get description() {
+				return t("settings_selector.horizontal_padding_for_input_editor");
+			},
 			currentValue: String(config.editorPaddingX),
 			values: ["0", "1", "2", "3"],
 		});
@@ -783,8 +987,12 @@ export class SettingsSelectorComponent extends Container {
 		const editorPaddingIndex = items.findIndex((item) => item.id === "editor-padding");
 		items.splice(editorPaddingIndex + 1, 0, {
 			id: "output-padding",
-			label: "输出内边距",
-			description: "用户消息、助手消息和思考内容的水平内边距",
+			get label() {
+				return t("settings_selector.output_padding");
+			},
+			get description() {
+				return t("settings_selector.horizontal_padding_for_user_messages_assistant_messages");
+			},
 			currentValue: String(config.outputPad),
 			values: ["0", "1"],
 		});
@@ -793,8 +1001,12 @@ export class SettingsSelectorComponent extends Container {
 		const outputPaddingIndex = items.findIndex((item) => item.id === "output-padding");
 		items.splice(outputPaddingIndex + 1, 0, {
 			id: "autocomplete-max-visible",
-			label: "自动补全最大条目数",
-			description: "自动补全下拉列表的最大可见条目数（3-20）",
+			get label() {
+				return t("settings_selector.autocomplete_max_items");
+			},
+			get description() {
+				return t("settings_selector.max_visible_items_in_autocomplete_dropdown");
+			},
 			currentValue: String(config.autocompleteMaxVisible),
 			values: ["3", "5", "7", "10", "15", "20"],
 		});
@@ -803,8 +1015,12 @@ export class SettingsSelectorComponent extends Container {
 		const autocompleteIndex = items.findIndex((item) => item.id === "autocomplete-max-visible");
 		items.splice(autocompleteIndex + 1, 0, {
 			id: "clear-on-shrink",
-			label: "收缩时清除空行",
-			description: "内容收缩时清除空行（可能导致闪烁）",
+			get label() {
+				return t("settings_selector.clear_on_shrink");
+			},
+			get description() {
+				return t("settings_selector.clear_empty_rows_when_content_shrinks_may");
+			},
 			currentValue: config.clearOnShrink ? "true" : "false",
 			values: ["true", "false"],
 		});
@@ -813,14 +1029,29 @@ export class SettingsSelectorComponent extends Container {
 		const clearOnShrinkIndex = items.findIndex((item) => item.id === "clear-on-shrink");
 		items.splice(clearOnShrinkIndex + 1, 0, {
 			id: "terminal-progress",
-			label: "终端进度",
-			description: "在终端标签页栏显示 OSC 9;4 进度指示",
+			get label() {
+				return t("settings_selector.terminal_progress");
+			},
+			get description() {
+				return t("settings_selector.show_osc_progress_indicators_in_the_terminal");
+			},
 			currentValue: config.showTerminalProgress ? "true" : "false",
 			values: ["true", "false"],
 		});
 
 		// Add borders
 		this.addChild(new DynamicBorder());
+		const englishContext = new LanguageContext("en");
+		for (const item of items) {
+			item.searchAliases = [item.id, englishContext.run(() => item.label), ...(item.searchAliases ?? [])];
+			item.valueLabels = {
+				true: () => t("settings.enabled"),
+				false: () => t("settings.disabled"),
+				"one-at-a-time": () => t("settings.one_at_a_time"),
+				all: () => t("settings.all"),
+				...item.valueLabels,
+			};
+		}
 
 		this.settingsList = new SettingsList(
 			items,
@@ -828,6 +1059,9 @@ export class SettingsSelectorComponent extends Container {
 			getSettingsListTheme(),
 			(id, newValue) => {
 				switch (id) {
+					case "language":
+						callbacks.onLanguageChange(newValue as Language);
+						break;
 					case "autocompact":
 						callbacks.onAutoCompactChange(newValue === "true");
 						break;
@@ -884,10 +1118,7 @@ export class SettingsSelectorComponent extends Container {
 						callbacks.onEnableInstallTelemetryChange(newValue === "true");
 						break;
 					case "default-project-trust": {
-						const defaultProjectTrust = DEFAULT_PROJECT_TRUST_BY_LABEL.get(newValue);
-						if (defaultProjectTrust) {
-							callbacks.onDefaultProjectTrustChange(defaultProjectTrust);
-						}
+						callbacks.onDefaultProjectTrustChange(newValue as DefaultProjectTrust);
 						break;
 					}
 					case "double-escape-action":
@@ -934,7 +1165,13 @@ export class SettingsSelectorComponent extends Container {
 				}
 			},
 			callbacks.onCancel,
-			{ enableSearch: true },
+			{
+				enableSearch: true,
+				emptyMessage: () => t("settings.no_settings"),
+				noMatchMessage: () => t("settings.no_match"),
+				hintMessage: () => t("settings.hint"),
+				searchHintMessage: () => t("settings.search_hint"),
+			},
 		);
 
 		this.addChild(this.settingsList);

@@ -34,6 +34,7 @@ import { type AppMode, resolveProjectTrusted } from "./core/project-trust.ts";
 import { DefaultResourceLoader } from "./core/resource-loader.ts";
 import { SettingsManager } from "./core/settings-manager.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
+import { t } from "./i18n/index.ts";
 import { spawnProcess, spawnProcessSync, waitForChildProcess } from "./utils/child-process.ts";
 import { canonicalizePath, getCwdRelativePath } from "./utils/paths.ts";
 import { getPiUserAgent } from "./utils/pi-user-agent.ts";
@@ -278,96 +279,56 @@ function getPackageCommandUsage(command: PackageCommand): string {
 const CONFIG_COMMAND_USAGE = `${APP_NAME} config [-l] [--approve|--no-approve]`;
 
 function printConfigCommandHelp(): void {
-	console.log(`${chalk.bold("Usage:")}
-  ${CONFIG_COMMAND_USAGE}
-
-Open the resource configuration TUI to enable or disable package resources.
-Without -l, starts in global settings (~/${CONFIG_DIR_NAME}/agent/settings.json).
-Press Tab in the TUI to switch between global and project-local modes.
-
-Options:
-  -l, --local       Edit project overrides (${CONFIG_DIR_NAME}/settings.json)
-  -a, --approve     Trust project-local files for this command with -l
-  -na, --no-approve Ignore project-local files for this command with -l
-`);
+	console.log(
+		t("package_help.config", {
+			p0: chalk.bold(t("args.usage")),
+			p1: CONFIG_COMMAND_USAGE,
+			p2: CONFIG_DIR_NAME,
+		}),
+	);
 }
 
 function printPackageCommandHelp(command: PackageCommand): void {
 	switch (command) {
 		case "install":
-			console.log(`${chalk.bold("Usage:")}
-  ${getPackageCommandUsage("install")}
-
-Install a package and add it to settings.
-
-Options:
-  -l, --local       Install project-locally (${CONFIG_DIR_NAME}/settings.json)
-  -a, --approve     Trust project-local files for this command
-  -na, --no-approve Ignore project-local files for this command
-
-Examples:
-  ${APP_NAME} install npm:@foo/bar
-  ${APP_NAME} install git:github.com/user/repo
-  ${APP_NAME} install git:git@github.com:user/repo
-  ${APP_NAME} install https://github.com/user/repo
-  ${APP_NAME} install ssh://git@github.com/user/repo
-  ${APP_NAME} install ./local/path
-`);
+			console.log(
+				t("package_help.install", {
+					p0: chalk.bold(t("args.usage")),
+					p1: getPackageCommandUsage("install"),
+					p2: CONFIG_DIR_NAME,
+					p3: APP_NAME,
+				}),
+			);
 			return;
 
 		case "remove":
-			console.log(`${chalk.bold("Usage:")}
-  ${getPackageCommandUsage("remove")}
-
-Remove a package and its source from settings.
-Alias: ${APP_NAME} uninstall <source> [-l]
-
-Options:
-  -l, --local       Remove from project settings (${CONFIG_DIR_NAME}/settings.json)
-  -a, --approve     Trust project-local files for this command
-  -na, --no-approve Ignore project-local files for this command
-
-Examples:
-  ${APP_NAME} remove npm:@foo/bar
-  ${APP_NAME} uninstall npm:@foo/bar
-`);
+			console.log(
+				t("package_help.remove", {
+					p0: chalk.bold(t("args.usage")),
+					p1: getPackageCommandUsage("remove"),
+					p2: APP_NAME,
+					p3: CONFIG_DIR_NAME,
+				}),
+			);
 			return;
 
 		case "update":
-			console.log(`${chalk.bold("Usage:")}
-  ${getPackageCommandUsage("update")}
-
-Update pi, installed packages, or model catalogs.
-
-Options:
-  --self                  Update pi only (default when no target is given)
-  --extensions            Update installed packages only
-  --models                Refresh model catalogs only
-  --all                   Update pi and installed packages
-  --extension <source>    Update one package only
-  -a, --approve           Trust project-local files for this command
-  -na, --no-approve       Ignore project-local files for this command
-  --force                 Reinstall pi even if the current version is latest
-
-Short forms:
-  ${APP_NAME} update                Update pi only
-  ${APP_NAME} update --all          Update pi and all extensions
-  ${APP_NAME} update --models       Refresh model catalogs only
-  ${APP_NAME} update <source>       Update one package
-  ${APP_NAME} update pi             Update pi only (self works as alias to pi)
-`);
+			console.log(
+				t("package_help.update", {
+					p0: chalk.bold(t("args.usage")),
+					p1: getPackageCommandUsage("update"),
+					p2: APP_NAME,
+				}),
+			);
 			return;
 
 		case "list":
-			console.log(`${chalk.bold("Usage:")}
-  ${getPackageCommandUsage("list")}
-
-List installed packages from user and project settings.
-
-Options:
-  -a, --approve      Trust project-local files for this command
-  -na, --no-approve  Ignore project-local files for this command
-`);
+			console.log(
+				t("package_help.list", {
+					p0: chalk.bold(t("args.usage")),
+					p1: getPackageCommandUsage("list"),
+				}),
+			);
 			return;
 	}
 }
@@ -767,7 +728,7 @@ async function createCommandSettingsManager(options: {
 				}).loadProjectTrustExtensions()
 			: undefined;
 	for (const error of extensionsResult?.errors ?? []) {
-		projectTrustWarnings.push(`加载扩展 "${error.path}" 失败：${error.error}`);
+		projectTrustWarnings.push(`Failed to load extension "${error.path}": ${error.error}`);
 	}
 
 	const projectTrusted = await resolveProjectTrusted({

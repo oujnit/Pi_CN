@@ -1,0 +1,15 @@
+{
+  "upstreamVersion": "0.86.0",
+  "sourceCommit": "ecac0a9c",
+  "forkCommit": "981af327224b8cde754d61e2e88b8c49bfac3985",
+  "generatedAt": "2026-09-20T03:29:43.278Z",
+  "source": "Pi_CN fork build snapshot produced by upstream generate-models.ts --strict --data-only; not the upstream release snapshot",
+  "catalogSources": [
+    "https://models.dev/api.json",
+    "https://integrate.api.nvidia.com/v1/models",
+    "https://openrouter.ai/api/v1/models",
+    "https://ai-gateway.vercel.sh/v1/models",
+    "Radius built-in catalog"
+  ],
+  "validation": "data/.manifest.json: upstream structureHash and per-file SHA-256"
+}

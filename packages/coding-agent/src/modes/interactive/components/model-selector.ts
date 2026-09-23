@@ -10,6 +10,7 @@ import {
 	type TUI,
 } from "@earendil-works/pi-tui";
 import type { ModelRuntime } from "../../../core/model-runtime.ts";
+import { t } from "../../../i18n/index.ts";
 import { refreshModelCatalogs } from "../model-catalog-refresh.ts";
 import { getModelSelectorSearchText } from "../model-search.ts";
 import { theme } from "../theme/theme.ts";
@@ -61,7 +62,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 	private onSelectAsDefaultCallback?: (model: Model<any>) => void;
 	private onCancelCallback: () => void;
 	private errorMessage?: string;
-	private refreshStatusMessage = "正在刷新模型目录…";
+	private refreshStatusMessage = t("model_selector.refreshing_model_catalogs");
 	private refreshStatusSuccess = false;
 	private tui: TUI;
 	private scopedModels: ReadonlyArray<ScopedModelItem>;
@@ -107,7 +108,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			this.scopeHintText = new Text(this.getScopeHintText(), 0, 0);
 			this.addChild(this.scopeHintText);
 		} else {
-			const hintText = "仅显示已配置供应商的模型。使用 /login 添加供应商。";
+			const hintText = t("model_selector.only_showing_models_from_configured_providers_use");
 			this.addChild(new Text(theme.fg("warning", hintText), 0, 0));
 		}
 		this.addChild(new Spacer(1));
@@ -137,10 +138,15 @@ export class ModelSelectorComponent extends Container implements Focusable {
 		if (this.onSelectAsDefaultCallback) {
 			this.addChild(
 				new Text(
-					theme.fg(
-						"dim",
-						`  ${keyDisplayText("tui.select.confirm")} 选择 · ${keyDisplayText("app.models.save")} 设为默认 · ${keyDisplayText("tui.select.cancel")} 取消`,
-					),
+					() =>
+						theme.fg(
+							"dim",
+							t("model_selector.p_to_select_p_to_set_as", {
+								p0: String(keyDisplayText("tui.select.confirm")),
+								p1: String(keyDisplayText("app.models.save")),
+								p2: String(keyDisplayText("tui.select.cancel")),
+							}),
+						),
 					0,
 					0,
 				),
@@ -193,15 +199,15 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			if (this.closed) return;
 			this.refreshStatusMessage = "";
 			if (result.aborted && timedOut) {
-				this.errorMessage = "模型刷新超时；正在显示缓存的模型。";
+				this.errorMessage = "Model refresh timed out; showing cached models.";
 			} else if (result.errors.size === 1) {
-				this.errorMessage = `无法刷新 ${result.errors.keys().next().value}；正在显示缓存的模型。`;
+				this.errorMessage = `Could not refresh ${result.errors.keys().next().value}; showing cached models.`;
 			} else if (result.errors.size > 1) {
-				this.errorMessage = `无法刷新 ${result.errors.size} 个模型目录（${[...result.errors.keys()].join(", ")}）；正在显示缓存的模型。`;
+				this.errorMessage = `Could not refresh ${result.errors.size} model catalogs (${[...result.errors.keys()].join(", ")}); showing cached models.`;
 			} else {
 				this.errorMessage = this.modelRuntime.getError();
 				if (!this.errorMessage) {
-					this.refreshStatusMessage = "模型目录已刷新。";
+					this.refreshStatusMessage = "Model catalogs refreshed.";
 					this.refreshStatusSuccess = true;
 				}
 			}
@@ -212,8 +218,10 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			if (this.closed) return;
 			this.refreshStatusMessage = "";
 			this.errorMessage = timedOut
-				? "模型刷新超时；正在显示缓存的模型。"
-				: `无法刷新模型目录：${error instanceof Error ? error.message : String(error)}`;
+				? t("model_selector.model_refresh_timed_out_showing_cached_models")
+				: t("model_selector.could_not_refresh_model_catalogs_p", {
+						p0: String(error instanceof Error ? error.message : String(error)),
+					});
 			this.updateList();
 			this.tui.requestRender();
 		} finally {
@@ -240,19 +248,30 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			const bIsDefault = this.isDefaultModel(b.model);
 			if (aIsDefault && !bIsDefault) return -1;
 			if (!aIsDefault && bIsDefault) return 1;
-			return a.provider.localeCompare(b.provider);
+			const aUsesCurrentProvider = a.provider === this.currentModel?.provider;
+			const bUsesCurrentProvider = b.provider === this.currentModel?.provider;
+			if (aUsesCurrentProvider && !bUsesCurrentProvider) return -1;
+			if (!aUsesCurrentProvider && bUsesCurrentProvider) return 1;
+			const providerOrder = a.provider.localeCompare(b.provider);
+			return providerOrder !== 0 ? providerOrder : a.id.localeCompare(b.id);
 		});
 		return sorted;
 	}
 
 	private getScopeText(): string {
-		const allText = this.scope === "all" ? theme.fg("accent", "全部") : theme.fg("muted", "全部");
-		const scopedText = this.scope === "scoped" ? theme.fg("accent", "限定") : theme.fg("muted", "限定");
-		return `${theme.fg("muted", "范围：")}${allText}${theme.fg("muted", " | ")}${scopedText}`;
+		const allText =
+			this.scope === "all"
+				? theme.fg("accent", t("model_selector.all"))
+				: theme.fg("muted", t("model_selector.all"));
+		const scopedText =
+			this.scope === "scoped"
+				? theme.fg("accent", t("model_selector.scoped"))
+				: theme.fg("muted", t("model_selector.scoped"));
+		return `${theme.fg("muted", t("model_selector.scope_2"))}${allText}${theme.fg("muted", " | ")}${scopedText}`;
 	}
 
 	private getScopeHintText(): string {
-		return keyHint("tui.input.tab", "切换范围") + theme.fg("muted", "（全部/限定）");
+		return keyHint("tui.input.tab", t("model_selector.scope")) + theme.fg("muted", t("model_selector.all_scoped"));
 	}
 
 	private isDefaultModel(model: Model<any>): boolean {
@@ -261,7 +280,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 
 	private isDefaultSearch(query: string): boolean {
 		const normalized = query.trim().toLowerCase();
-		return normalized.length > 0 && "default".startsWith(normalized);
+		return normalized.length > 0 && ("default".startsWith(normalized) || "默认".startsWith(normalized));
 	}
 
 	private setScope(scope: ModelScope): void {
@@ -279,7 +298,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 	private filterModels(query: string): void {
 		if (query) {
 			const filtered = fuzzyFilter(this.activeModels, query, (item) => {
-				const defaultText = this.isDefaultModel(item.model) ? " default" : "";
+				const defaultText = this.isDefaultModel(item.model) ? " default 默认" : "";
 				return `${getModelSelectorSearchText({ id: item.id, provider: item.provider, name: item.model.name })}${defaultText}`;
 			});
 			if (this.isDefaultSearch(query)) {
@@ -320,7 +339,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			const isSelected = i === this.selectedIndex;
 			const isCurrent = modelsAreEqual(this.currentModel, item.model);
 			const isDefault = this.isDefaultModel(item.model);
-			const defaultBadge = isDefault ? theme.fg("muted", " · 默认") : "";
+			const defaultBadge = isDefault ? theme.fg("muted", t("model_selector.default")) : "";
 
 			const cursor = isSelected ? theme.fg("accent", "→ ") : "  ";
 			const currentMarker = isCurrent ? theme.fg("accent", "✓ ") : "  ";
@@ -345,11 +364,17 @@ export class ModelSelectorComponent extends Container implements Focusable {
 				this.listContainer.addChild(new Text(theme.fg("error", line), 0, 0));
 			}
 		} else if (this.filteredModels.length === 0) {
-			this.listContainer.addChild(new Text(theme.fg("muted", "  没有匹配的模型"), 0, 0));
+			this.listContainer.addChild(new Text(() => theme.fg("muted", t("model_selector.no_matching_models")), 0, 0));
 		} else {
 			const selected = this.filteredModels[this.selectedIndex];
 			this.listContainer.addChild(new Spacer(1));
-			this.listContainer.addChild(new Text(theme.fg("muted", `  模型名称：${selected.model.name}`), 0, 0));
+			this.listContainer.addChild(
+				new Text(
+					() => theme.fg("muted", t("model_selector.model_name_p", { p0: String(selected.model.name) })),
+					0,
+					0,
+				),
+			);
 		}
 		if (this.refreshStatusMessage) {
 			this.listContainer.addChild(new Spacer(1));
