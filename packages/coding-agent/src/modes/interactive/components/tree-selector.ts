@@ -649,20 +649,20 @@ class TreeList implements Component {
 		let labels = "";
 		switch (this.filterMode) {
 			case "no-tools":
-				labels += " [no-tools]";
+				labels += t("tree_selector.status_no_tools");
 				break;
 			case "user-only":
-				labels += " [user]";
+				labels += t("tree_selector.status_user");
 				break;
 			case "labeled-only":
-				labels += " [labeled]";
+				labels += t("tree_selector.status_labeled");
 				break;
 			case "all":
-				labels += " [all]";
+				labels += t("tree_selector.status_all");
 				break;
 		}
 		if (this.showLabelTimestamps) {
-			labels += " [+label time]";
+			labels += t("tree_selector.status_label_time");
 		}
 		return labels;
 	}

@@ -435,13 +435,43 @@ function formatCacheWarmingDecisionTime(nextWarmAt: number | undefined, now: num
 	return t("cache_warmer.decision_in_p", { p0: String(parts.join(" ")) });
 }
 
+/**
+ * Reasons stay English on the status object because it is exported API and its usage notes are
+ * persisted to the session file; resolving labels here keeps those values stable and lets a
+ * runtime language switch re-render correctly. Unknown values fall back to themselves.
+ */
+const CACHE_WARMING_LABELS: Record<string, () => string> = {
+	"waiting for first request": () => t("cache_warmer.reason_waiting_for_first_request"),
+	"cache warming disabled": () => t("cache_warmer.reason_cache_warming_disabled"),
+	"conversation context changed": () => t("cache_warmer.reason_conversation_context_changed"),
+	"cache economics unavailable": () => t("cache_warmer.cache_economics_unavailable"),
+	"request cannot be replayed safely": () => t("cache_warmer.reason_request_cannot_be_replayed_safely"),
+	"request disabled prompt caching": () => t("cache_warmer.reason_request_disabled_prompt_caching"),
+	"cache lifetime unavailable": () => t("cache_warmer.reason_cache_lifetime_unavailable"),
+	"agent run settled": () => t("cache_warmer.reason_agent_run_settled"),
+	"30-minute idle safety limit reached": () => t("cache_warmer.reason_30_minute_idle_safety_limit_reached"),
+	"one-hour safety limit reached": () => t("cache_warmer.reason_one_hour_safety_limit_reached"),
+	"stopped by extension": () => t("cache_warmer.reason_stopped_by_extension"),
+	"expected savings below threshold": () => t("cache_warmer.reason_expected_savings_below_threshold"),
+	"cache refresh deadline missed": () => t("cache_warmer.reason_cache_refresh_deadline_missed"),
+	inactive: () => t("cache_warmer.reason_inactive"),
+	"extension override": () => t("cache_warmer.note_extension_override"),
+};
+
+function cacheWarmingLabel(value: string | undefined): string | undefined {
+	if (value === undefined) return undefined;
+	return CACHE_WARMING_LABELS[value]?.() ?? value;
+}
+
 /** One-line status for `/session`. */
 export function formatCacheWarmingStatus(status: CacheWarmingStatus, now = Date.now()): string {
 	const decision = status.decision;
 	// A decision is attached once pi (or an extension) acted on it; "inactive"
 	// without one never got that far.
 	if (!decision || (status.state === "inactive" && !decision.economicsAvailable && !status.extensionOverride)) {
-		return t("cache_warmer.inactive_p", { p0: String(status.reason ?? t("cache_warmer.unknown_reason")) });
+		return t("cache_warmer.inactive_p", {
+			p0: String(cacheWarmingLabel(status.reason) ?? t("cache_warmer.unknown_reason")),
+		});
 	}
 	const details = status.extensionOverride
 		? t("cache_warmer.extension_override_p", { p0: String(formatCacheWarmingEconomics(decision)) })
@@ -456,7 +486,7 @@ export function formatCacheWarmingStatus(status: CacheWarmingStatus, now = Date.
 
 /** One-line transcript text for persisted cache-warming usage. */
 export function formatCacheWarmingUsage(entry: UsageEntry): string {
-	const note = entry.note ? ` (${entry.note})` : "";
+	const note = entry.note ? ` (${cacheWarmingLabel(entry.note)})` : "";
 	const cost = entry.usage.cost.total.toFixed(6).replace(/(\.\d{3}\d*?)0+$/, "$1");
 	return t("cache_warmer.cache_warmed_p_p", { p0: String(note), p1: String(cost) });
 }

@@ -121,14 +121,14 @@ export function parseArgs(args: string[]): Args {
 		} else if (arg === "--mode") {
 			const mode = args[i + 1];
 			if (mode === undefined || mode.startsWith("-")) {
-				result.diagnostics.push({ type: "error", message: "--mode requires text, json, or rpc" });
+				result.diagnostics.push({ type: "error", message: t("args.mode_requires_text_json_or_rpc") });
 				continue;
 			}
 			i++;
 			if (mode !== "text" && mode !== "json" && mode !== "rpc") {
 				result.diagnostics.push({
 					type: "error",
-					message: `Invalid mode "${mode}". Valid values: text, json, rpc`,
+					message: t("args.invalid_mode_p_valid_values_text_json_rpc", { p0: mode }),
 				});
 				continue;
 			}
@@ -155,7 +155,7 @@ export function parseArgs(args: string[]): Args {
 			if (i + 1 < args.length) {
 				result.name = args[++i];
 			} else {
-				result.diagnostics.push({ type: "error", message: "--name requires a value" });
+				result.diagnostics.push({ type: "error", message: t("args.name_requires_a_value") });
 			}
 		} else if (arg === "--no-session") {
 			result.noSession = true;
@@ -190,7 +190,10 @@ export function parseArgs(args: string[]): Args {
 			} else {
 				result.diagnostics.push({
 					type: "warning",
-					message: `Invalid thinking level "${level}". Valid values: ${VALID_THINKING_LEVELS.join(", ")}`,
+					message: t("args.invalid_thinking_level_p_valid_values_p", {
+						p0: level,
+						p1: VALID_THINKING_LEVELS.join(", "),
+					}),
 				});
 			}
 		} else if (arg === "--print" || arg === "-p") {
@@ -219,7 +222,7 @@ export function parseArgs(args: string[]): Args {
 		} else if (arg === "--use-theme") {
 			const themeName = args[i + 1];
 			if (themeName === undefined || themeName.startsWith("-")) {
-				result.diagnostics.push({ type: "error", message: "--use-theme requires a theme name" });
+				result.diagnostics.push({ type: "error", message: t("args.use_theme_requires_a_theme_name") });
 			} else {
 				result.useTheme = themeName;
 				i++;
@@ -245,12 +248,12 @@ export function parseArgs(args: string[]): Args {
 				result.tuiMode = mode;
 				i++;
 			} else if (mode === undefined || mode.startsWith("-")) {
-				result.diagnostics.push({ type: "error", message: "--tui-mode requires regular or fullscreen" });
+				result.diagnostics.push({ type: "error", message: t("args.tui_mode_requires_regular_or_fullscreen") });
 			} else {
 				i++;
 				result.diagnostics.push({
 					type: "error",
-					message: `Invalid TUI mode "${mode}". Valid values: regular, fullscreen`,
+					message: t("args.invalid_tui_mode_p_valid_values_regular", { p0: mode }),
 				});
 			}
 		} else if (arg === "--verbose") {
@@ -278,7 +281,7 @@ export function parseArgs(args: string[]): Args {
 				}
 			}
 		} else if (arg.startsWith("-") && !arg.startsWith("--")) {
-			result.diagnostics.push({ type: "error", message: `Unknown option: ${arg}` });
+			result.diagnostics.push({ type: "error", message: t("args.unknown_option_p", { p0: arg }) });
 		} else if (!arg.startsWith("-")) {
 			result.messages.push(arg);
 		}

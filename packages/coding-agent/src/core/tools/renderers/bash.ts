@@ -92,7 +92,7 @@ function rebuildBashResultRenderComponent(
 					if (state.cachedSkipped && state.cachedSkipped > 0) {
 						const hint =
 							theme.fg("muted", t("bash.p_earlier_lines", { p0: String(state.cachedSkipped) })) +
-							` ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
+							` ${keyHint("app.tools.expand", t("bash_execution.to_expand"))}${theme.fg("muted", ")")}`;
 						return ["", truncateToWidth(hint, width, "..."), ...(state.cachedLines ?? [])];
 					}
 					return ["", ...(state.cachedLines ?? [])];

@@ -2,6 +2,7 @@ import { join } from "node:path";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import type { Model } from "@earendil-works/pi-ai";
 import { getAgentDir } from "../config.ts";
+import { t } from "../i18n/index.ts";
 import { resolvePath } from "../utils/paths.ts";
 import type { SessionStartEvent, ToolDefinition } from "./extensions/index.ts";
 import { ModelRuntime } from "./model-runtime.ts";
@@ -113,14 +114,18 @@ function applyExtensionFlagValues(
 		}
 		diagnostics.push({
 			type: "error",
-			message: `Extension flag "--${name}" requires a value`,
+			message: t("agent_session_services.extension_flag_p_requires_a_value", { p0: name }),
 		});
 	}
 
 	if (unknownFlags.length > 0) {
+		const list = unknownFlags.map((name) => `--${name}`).join(", ");
 		diagnostics.push({
 			type: "error",
-			message: `Unknown option${unknownFlags.length === 1 ? "" : "s"}: ${unknownFlags.map((name) => `--${name}`).join(", ")}`,
+			message:
+				unknownFlags.length === 1
+					? t("agent_session_services.unknown_option_p", { p0: list })
+					: t("agent_session_services.unknown_options_p", { p0: list }),
 		});
 	}
 

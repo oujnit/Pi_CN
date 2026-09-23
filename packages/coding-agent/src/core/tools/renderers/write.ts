@@ -7,6 +7,7 @@
  */
 
 import { Container, Text } from "@earendil-works/pi-tui";
+import { t } from "../../../i18n/index.ts";
 import { keyHint } from "../../../modes/interactive/components/keybinding-hints.ts";
 import { getLanguageFromPath, highlightCode, type Theme } from "../../../modes/interactive/theme/theme.ts";
 import type { ToolDefinition, ToolRenderResultOptions } from "../../extensions/types.ts";
@@ -119,7 +120,7 @@ function formatWriteCall(
 		const remaining = lines.length - maxLines;
 		text += `\n\n${displayLines.map((line) => (lang ? line : theme.fg("toolOutput", replaceTabs(line)))).join("\n")}`;
 		if (remaining > 0) {
-			text += `${theme.fg("muted", `\n... (${remaining} more lines, ${totalLines} total,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
+			text += `${theme.fg("muted", `\n${t("tool_output.p_more_lines_p_total", { p0: String(remaining), p1: String(totalLines) })}`)} ${keyHint("app.tools.expand", t("bash_execution.to_expand"))}${theme.fg("muted", ")")}`;
 		}
 	}
 

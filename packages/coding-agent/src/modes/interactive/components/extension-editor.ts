@@ -96,7 +96,7 @@ export class ExtensionEditorComponent extends Container implements Focusable {
 			keyHint("tui.input.newLine", t("extension_editor.newline")) +
 			"  " +
 			keyHint("tui.select.cancel", t("extension_editor.cancel")) +
-			`  ${keyHint("app.editor.external", "external editor")}`;
+			`  ${keyHint("app.editor.external", t("extension_editor.external_editor"))}`;
 		this.addChild(new Text(hint, 1, 0));
 
 		this.addChild(new Spacer(1));

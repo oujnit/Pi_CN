@@ -12,6 +12,7 @@ import {
 	type TuiMouseEvent,
 } from "@earendil-works/pi-tui";
 import type { ToolDefinition, ToolRenderContext, ToolRenderResultOptions } from "../../../core/extensions/types.ts";
+import { t } from "../../../i18n/index.ts";
 import type { Theme } from "../theme/theme.ts";
 
 /**
@@ -167,7 +168,7 @@ export class ToolExecutionComponent extends Container {
 		const remaining = lines.length - displayLines.length;
 		let text = displayLines.map((line) => theme.fg("toolOutput", line)).join("\n");
 		if (remaining > 0) {
-			text += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
+			text += `${theme.fg("muted", `\n${t("tool_output.p_more_lines", { p0: String(remaining) })}`)} ${keyHint("app.tools.expand", t("bash_execution.to_expand"))}${theme.fg("muted", ")")}`;
 		}
 		return new Text(text, 0, 0);
 	}

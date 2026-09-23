@@ -392,7 +392,7 @@ class ThemeSubmenu extends Container {
 				get description() {
 					return t("settings_selector.save_and_go_back");
 				},
-				currentValue: "save and go back",
+				currentValue: t("settings_selector.save_and_go_back_2"),
 				values: [t("settings_selector.save_and_go_back_2")],
 			},
 			{
@@ -403,7 +403,7 @@ class ThemeSubmenu extends Container {
 				get description() {
 					return t("settings_selector.switch_to_one_theme_for_light_and");
 				},
-				currentValue: "switch to single theme",
+				currentValue: t("settings_selector.switch_to_single_theme"),
 				values: [t("settings_selector.switch_to_single_theme")],
 			},
 		];

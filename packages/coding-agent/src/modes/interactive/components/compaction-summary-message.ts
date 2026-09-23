@@ -40,7 +40,7 @@ export class CompactionSummaryMessageComponent extends Box {
 		content.addChild(new Spacer(1));
 
 		if (this.expanded) {
-			const header = `**Compacted from ${tokenStr} tokens**\n\n`;
+			const header = t("compaction_summary_message.compacted_from_p_tokens", { p0: tokenStr });
 			content.addChild(
 				new Markdown(header + this.message.summary, 0, 0, this.markdownTheme, {
 					color: (text: string) => theme.fg("customMessageText", text),
@@ -49,9 +49,12 @@ export class CompactionSummaryMessageComponent extends Box {
 		} else {
 			content.addChild(
 				new Text(
-					theme.fg("customMessageText", `Compacted from ${tokenStr} tokens (`) +
+					theme.fg(
+						"customMessageText",
+						t("compaction_summary_message.compacted_from_p_tokens_collapsed", { p0: tokenStr }),
+					) +
 						theme.fg("dim", keyText("app.tools.expand")) +
-						theme.fg("customMessageText", " to expand)"),
+						theme.fg("customMessageText", t("compaction_summary_message.to_expand")),
 					0,
 					0,
 				),

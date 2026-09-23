@@ -49,7 +49,7 @@ function formatFindResult(
 		const remaining = lines.length - maxLines;
 		text += `\n${displayLines.map((line) => theme.fg("toolOutput", line)).join("\n")}`;
 		if (remaining > 0) {
-			text += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
+			text += `${theme.fg("muted", `\n${t("tool_output.p_more_lines", { p0: String(remaining) })}`)} ${keyHint("app.tools.expand", t("bash_execution.to_expand"))}${theme.fg("muted", ")")}`;
 		}
 	}
 

@@ -149,11 +149,11 @@ class SessionSelectorHeader implements Component {
 		let scopeText: string;
 		if (this.loading) {
 			const progressText = this.loadProgress ? `${this.loadProgress.loaded}/${this.loadProgress.total}` : "...";
-			scopeText = `${theme.fg("muted", "○ Current Folder | ")}${theme.fg("accent", `Loading ${progressText}`)}`;
+			scopeText = `${theme.fg("muted", `○ ${t("session_selector.current_folder")} | `)}${theme.fg("accent", t("session_selector.loading_p", { p0: progressText }))}`;
 		} else if (this.scope === "current") {
-			scopeText = `${theme.fg("accent", "◉ Current Folder")}${theme.fg("muted", " | ○ All")}`;
+			scopeText = `${theme.fg("accent", `◉ ${t("session_selector.current_folder")}`)}${theme.fg("muted", ` | ○ ${t("session_selector.all")}`)}`;
 		} else {
-			scopeText = `${theme.fg("muted", "○ Current Folder | ")}${theme.fg("accent", "◉ All")}`;
+			scopeText = `${theme.fg("muted", `○ ${t("session_selector.current_folder")} | `)}${theme.fg("accent", `◉ ${t("session_selector.all")}`)}`;
 		}
 
 		const rightText = truncateToWidth(`${scopeText}  ${nameText}  ${sortText}`, width, "");
@@ -445,16 +445,16 @@ class SessionList implements Component, Focusable {
 			if (this.nameFilter === "named") {
 				const toggleKey = keyText("app.session.toggleNamedFilter");
 				if (this.showCwd) {
-					emptyMessage = `  No named sessions found. Press ${toggleKey} to show all.`;
+					emptyMessage = `  ${t("session_selector.no_named_sessions_found_press_p_to_show_all", { p0: toggleKey })}`;
 				} else {
-					emptyMessage = `  No named sessions in current folder. Press ${toggleKey} to show all, or Tab to view all.`;
+					emptyMessage = `  ${t("session_selector.no_named_sessions_in_current_folder_press_p_to", { p0: toggleKey })}`;
 				}
 			} else if (this.showCwd) {
 				// "All" scope - no sessions anywhere that match filter
-				emptyMessage = "  No sessions found";
+				emptyMessage = `  ${t("session_selector.no_sessions_found")}`;
 			} else {
 				// "Current folder" scope - hint to try "all"
-				emptyMessage = "  No sessions in current folder. Press Tab to view all.";
+				emptyMessage = `  ${t("session_selector.no_sessions_in_current_folder_press_tab_to_view")}`;
 			}
 			lines.push(theme.fg("muted", truncateToWidth(emptyMessage, width, "…")));
 			return lines;
@@ -875,7 +875,7 @@ export class SessionSelectorComponent extends Container implements Focusable {
 				this.header.setStatusMessage({ type: "info", message: msg }, 2000);
 				await this.refreshSessionsAfterMutation();
 			} else {
-				const errorMessage = result.error ?? "Unknown error";
+				const errorMessage = result.error ?? t("interactive_mode.unknown_error");
 				this.header.setStatusMessage(
 					{ type: "error", message: t("session_selector.failed_to_delete_p", { p0: String(errorMessage) }) },
 					3000,

@@ -48,9 +48,9 @@ export class BranchSummaryMessageComponent extends Box {
 		} else {
 			content.addChild(
 				new Text(
-					theme.fg("customMessageText", "Branch summary (") +
+					theme.fg("customMessageText", t("branch_summary_message.branch_summary_collapsed")) +
 						theme.fg("dim", keyText("app.tools.expand")) +
-						theme.fg("customMessageText", " to expand)"),
+						theme.fg("customMessageText", t("branch_summary_message.to_expand")),
 					0,
 					0,
 				),

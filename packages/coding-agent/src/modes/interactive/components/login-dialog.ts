@@ -40,7 +40,7 @@ export class LoginDialogComponent extends Container implements Focusable {
 		this.onComplete = onComplete;
 
 		const providerName = providerNameOverride || providerId;
-		const title = titleOverride ?? `Login to ${providerName}`;
+		const title = titleOverride ?? t("login_dialog.login_to_p", { p0: providerName });
 
 		// Top border
 		this.addChild(new DynamicBorder());

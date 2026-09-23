@@ -199,15 +199,20 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			if (this.closed) return;
 			this.refreshStatusMessage = "";
 			if (result.aborted && timedOut) {
-				this.errorMessage = "Model refresh timed out; showing cached models.";
+				this.errorMessage = t("model_selector.model_refresh_timed_out_showing_cached_models");
 			} else if (result.errors.size === 1) {
-				this.errorMessage = `Could not refresh ${result.errors.keys().next().value}; showing cached models.`;
+				this.errorMessage = t("model_selector.could_not_refresh_p_showing_cached_models", {
+					p0: String(result.errors.keys().next().value),
+				});
 			} else if (result.errors.size > 1) {
-				this.errorMessage = `Could not refresh ${result.errors.size} model catalogs (${[...result.errors.keys()].join(", ")}); showing cached models.`;
+				this.errorMessage = t("model_selector.could_not_refresh_p_model_catalogs_p_showing", {
+					p0: String(result.errors.size),
+					p1: [...result.errors.keys()].join(", "),
+				});
 			} else {
 				this.errorMessage = this.modelRuntime.getError();
 				if (!this.errorMessage) {
-					this.refreshStatusMessage = "Model catalogs refreshed.";
+					this.refreshStatusMessage = t("model_selector.model_catalogs_refreshed");
 					this.refreshStatusSuccess = true;
 				}
 			}

@@ -3,6 +3,7 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { platform, tmpdir } from "node:os";
 import { join } from "node:path";
 import { getNativeClipboard } from "@earendil-works/pi-tui";
+import { t } from "../i18n/index.ts";
 import { runClipboardCommand } from "./clipboard-command.ts";
 import { isWSL } from "./wsl.ts";
 
@@ -122,17 +123,17 @@ export async function copyToClipboard(text: string): Promise<void> {
 		else oversized = true;
 	}
 	if (copied) return;
-	if (oversized) throw new Error("Clipboard unavailable: text exceeds the OSC 52 size limit");
+	if (oversized) throw new Error(t("clipboard.clipboard_unavailable_text_exceeds_the_osc"));
 	if (p === "linux") {
 		if (env.TERMUX_VERSION) {
-			throw new Error("Clipboard unavailable: install the Termux:API app and `termux-api` package");
+			throw new Error(t("clipboard.clipboard_unavailable_install_the_termux_api"));
 		}
 		if (env.WAYLAND_DISPLAY) {
-			throw new Error("Clipboard unavailable: install `wl-clipboard` (`wl-copy`) or check Wayland access");
+			throw new Error(t("clipboard.clipboard_unavailable_install_wl_clipboard_wl"));
 		}
 		if (env.DISPLAY) {
-			throw new Error("Clipboard unavailable: install `xclip` or `xsel`, or check X11 access");
+			throw new Error(t("clipboard.clipboard_unavailable_install_xclip_or_xsel"));
 		}
 	}
-	throw new Error("Clipboard unavailable");
+	throw new Error(t("clipboard.clipboard_unavailable"));
 }

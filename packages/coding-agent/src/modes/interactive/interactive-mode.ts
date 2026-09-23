@@ -343,6 +343,18 @@ export function formatCrashExtensionHint(extensionMatches: readonly string[] | u
 	return t("interactive_mode.crash_extension_hint_many", { p0: labels, p1: APP_NAME });
 }
 
+const SCOPE_DISPLAY_LABELS: Record<string, () => string> = {
+	user: () => t("interactive_mode.scope_user"),
+	project: () => t("interactive_mode.scope_project"),
+	path: () => t("interactive_mode.scope_path"),
+	temp: () => t("interactive_mode.scope_temp"),
+};
+
+/** Scope keys group and sort the listing, so only their display is localized. */
+function localizedScope(value: string): string {
+	return SCOPE_DISPLAY_LABELS[value]?.() ?? value;
+}
+
 function isAnthropicSubscriptionAuthKey(apiKey: string | undefined): boolean {
 	return typeof apiKey === "string" && apiKey.startsWith("sk-ant-oat");
 }
@@ -1199,7 +1211,11 @@ export class InteractiveMode {
 		if (crash) {
 			const when = new Date(crash.timestamp).toLocaleString();
 			this.showWarning(
-				`${APP_NAME} crashed on ${when} (${crash.message}). Run /bug to report it; the crash details are attached automatically.`,
+				t("interactive_mode.p_crashed_on_p_p_run_bug_to_report", {
+					p0: APP_NAME,
+					p1: when,
+					p2: String(crash.message),
+				}),
 			);
 		}
 
@@ -1641,7 +1657,7 @@ export class InteractiveMode {
 		const lines: string[] = [];
 
 		for (const group of groups) {
-			lines.push(`  ${theme.fg("accent", group.scope)}`);
+			lines.push(`  ${theme.fg("accent", localizedScope(group.scope))}`);
 
 			const sortedPaths = [...group.paths].sort((a, b) => a.path.localeCompare(b.path));
 			for (const item of sortedPaths) {
@@ -1679,7 +1695,9 @@ export class InteractiveMode {
 		if (sourceInfo) {
 			const shortPath = this.getShortPath(p, sourceInfo);
 			const { label, scopeLabel } = this.getDisplaySourceInfo(sourceInfo);
-			const labelText = scopeLabel ? `${label} (${scopeLabel})` : label;
+			const labelText = scopeLabel
+				? `${localizedScope(label)} (${localizedScope(scopeLabel)})`
+				: localizedScope(label);
 			return `${labelText} ${shortPath}`;
 		}
 		return this.formatDisplayPath(p);
@@ -2163,19 +2181,16 @@ ${warningLines}`,
 	}
 
 	private crashReportInstructions(): string {
-		const resume = this.session.sessionFile ? `run \`${APP_NAME} -r\` to resume the session, then` : "start pi and";
-		return `To report this crash: ${resume} run /bug. The crash details are attached automatically.`;
+		return this.session.sessionFile
+			? t("interactive_mode.crash_report_instructions_resume_p", { p0: APP_NAME })
+			: t("interactive_mode.crash_report_instructions_p", { p0: APP_NAME });
 	}
 
 	private suggestBugReport(): void {
 		if (this.bugReportHintShown) return;
 		this.bugReportHintShown = true;
 		this.chatContainer.addChild(
-			new Text(
-				theme.fg("muted", `If this looks like a ${APP_NAME} bug, /bug sends a report to the developers.`),
-				this.outputPad,
-				0,
-			),
+			new Text(theme.fg("muted", t("interactive_mode.bug_report_hint_p", { p0: APP_NAME })), this.outputPad, 0),
 		);
 		this.ui.requestRender();
 	}
@@ -3529,9 +3544,11 @@ ${warningLines}`,
 					if (this.streamingMessage.stopReason === "aborted") {
 						const retryAttempt = this.session.retryAttempt;
 						errorMessage =
-							retryAttempt > 0
-								? `Aborted after ${retryAttempt} retry attempt${retryAttempt > 1 ? "s" : ""}`
-								: t("interactive_mode.operation_aborted");
+							retryAttempt === 0
+								? t("interactive_mode.operation_aborted")
+								: retryAttempt === 1
+									? t("interactive_mode.aborted_after_p_retry_attempt", { p0: String(retryAttempt) })
+									: t("interactive_mode.aborted_after_p_retry_attempts", { p0: String(retryAttempt) });
 						this.streamingMessage.errorMessage = errorMessage;
 					}
 					this.streamingComponent.updateContent(this.streamingMessage, false);
@@ -3995,11 +4012,13 @@ ${warningLines}`,
 							if (message.stopReason === "aborted") {
 								const retryAttempt = this.session.retryAttempt;
 								errorMessage =
-									retryAttempt > 0
-										? `Aborted after ${retryAttempt} retry attempt${retryAttempt > 1 ? "s" : ""}`
-										: t("interactive_mode.operation_aborted");
+									retryAttempt === 0
+										? t("interactive_mode.operation_aborted")
+										: retryAttempt === 1
+											? t("interactive_mode.aborted_after_p_retry_attempt", { p0: String(retryAttempt) })
+											: t("interactive_mode.aborted_after_p_retry_attempts", { p0: String(retryAttempt) });
 							} else {
-								errorMessage = message.errorMessage || "Error";
+								errorMessage = message.errorMessage || t("main.error_2");
 							}
 							component.updateResult({ content: [{ type: "text", text: errorMessage }], isError: true });
 						} else {
@@ -4165,9 +4184,11 @@ ${warningLines}`,
 		});
 		let label = t("interactive_mode.cache_miss");
 		if (miss.modelChanged) {
-			label = "Cache miss after model switch";
+			label = t("interactive_mode.cache_miss_after_model_switch");
 		} else if (miss.idleMs >= CACHE_TTL_MS) {
-			label = `Cache miss after ${Math.round(miss.idleMs / 60_000)}m idle`;
+			label = t("interactive_mode.cache_miss_after_p_m_idle", {
+				p0: String(Math.round(miss.idleMs / 60_000)),
+			});
 		}
 		const text = theme.fg("warning", `${label}: ${reBilled}`);
 		this.chatContainer.addChild(new Spacer(1));
@@ -4475,7 +4496,11 @@ ${warningLines}`,
 		if (restored === 0) {
 			this.showStatus(t("interactive_mode.no_queued_messages_to_restore"));
 		} else {
-			this.showStatus(`Restored ${restored} queued message${restored > 1 ? "s" : ""} to editor`);
+			this.showStatus(
+				restored === 1
+					? t("interactive_mode.restored_p_queued_message_to_editor", { p0: String(restored) })
+					: t("interactive_mode.restored_p_queued_messages_to_editor", { p0: String(restored) }),
+			);
 		}
 	}
 
@@ -5928,7 +5953,7 @@ ${packageLines}`,
 		const oauthProvider = providerOptions?.find((provider) => provider.authType === "oauth");
 		const oauthLoginLabel =
 			oauthProvider?.method && "loginLabel" in oauthProvider.method ? oauthProvider.method.loginLabel : undefined;
-		const subscriptionLabel = oauthLoginLabel ?? "Sign in with an account";
+		const subscriptionLabel = oauthLoginLabel ?? t("interactive_mode.sign_in_with_an_account");
 		const apiKeyLabel = t("interactive_mode.sign_in_with_an_api_key");
 		const availableAuthTypes = providerOptions
 			? new Set(providerOptions.map((provider) => provider.authType))
@@ -6121,9 +6146,14 @@ ${packageLines}`,
 				if (providerId === "llama.cpp") {
 					selectionError = llamaCppPostLoginGuidance(actionLabel, providerModels.length);
 				} else if (!hasDefaultModelProvider(providerId)) {
-					selectionError = `${actionLabel}, but no default model is configured for provider "${providerId}". Use /model to select a model.`;
+					selectionError = t("interactive_mode.p_but_no_default_model_is_configured_for_provider_p", {
+						p0: String(actionLabel),
+						p1: String(providerId),
+					});
 				} else if (providerModels.length === 0) {
-					selectionError = `${actionLabel}, but no models are available for that provider. Use /model to select a model.`;
+					selectionError = t("interactive_mode.p_but_no_models_are_available_for_that_provider", {
+						p0: String(actionLabel),
+					});
 				} else {
 					const defaultModelId = defaultModelPerProvider[providerId];
 					// Radius catalogs vary by account; prefer balanced, then use catalog order.
@@ -6131,14 +6161,20 @@ ${packageLines}`,
 						providerModels.find((model) => model.id === defaultModelId) ??
 						(providerId === "radius" ? providerModels[0] : undefined);
 					if (!selectedModel) {
-						selectionError = `${actionLabel}, but its default model "${defaultModelId}" is not available. Use /model to select a model.`;
+						selectionError = t("interactive_mode.p_but_its_default_model_p_is_not_available", {
+							p0: String(actionLabel),
+							p1: String(defaultModelId),
+						});
 					} else {
 						try {
 							await this.session.setModel(selectedModel, { persist: true });
 						} catch (error: unknown) {
 							selectedModel = undefined;
 							const errorMessage = error instanceof Error ? error.message : String(error);
-							selectionError = `${actionLabel}, but selecting its default model failed: ${errorMessage}. Use /model to select a model.`;
+							selectionError = t("interactive_mode.p_but_selecting_its_default_model_failed_p", {
+								p0: String(actionLabel),
+								p1: String(errorMessage),
+							});
 						}
 					}
 				}
@@ -6158,7 +6194,12 @@ ${packageLines}`,
 				void this.maybeWarnAboutAnthropicSubscriptionAuth(selectedModel);
 				this.checkDaxnutsEasterEgg(selectedModel);
 			} else {
-				this.showStatus(`${actionLabel}. Credentials saved to ${getAuthPath()}`);
+				this.showStatus(
+					t("interactive_mode.p_credentials_saved_to_p", {
+						p0: String(actionLabel),
+						p1: String(getAuthPath()),
+					}),
+				);
 				if (selectionError) {
 					this.showError(selectionError);
 				} else {
@@ -6710,48 +6751,48 @@ ${packageLines}`,
 
 `;
 		if (sessionName) {
-			info += `${theme.fg("dim", "Name:")} ${sessionName}\n`;
+			info += `${theme.fg("dim", t("interactive_mode.name_label"))} ${sessionName}\n`;
 		}
-		info += `${theme.fg("dim", "File:")} ${stats.sessionFile ?? "In-memory"}\n`;
-		info += `${theme.fg("dim", "ID:")} ${stats.sessionId}\n\n`;
-		info += `${theme.bold("Messages")}\n`;
-		info += `${theme.fg("dim", "Total:")} ${stats.totalMessages}\n`;
-		info += `${theme.fg("dim", "User:")} ${stats.userMessages}\n`;
-		info += `${theme.fg("dim", "Assistant:")} ${stats.assistantMessages}\n`;
-		info += `${theme.fg("dim", "Tools:")} ${stats.toolCalls} calls, ${stats.toolResults} results\n\n`;
-		info += `${theme.bold("Tokens")}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.file_label"))} ${stats.sessionFile ?? t("interactive_mode.in_memory")}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.id_label"))} ${stats.sessionId}\n\n`;
+		info += `${theme.bold(t("interactive_mode.messages_section"))}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.total_label"))} ${stats.totalMessages}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.user_label"))} ${stats.userMessages}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.assistant_label"))} ${stats.assistantMessages}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.tools_label"))} ${t("interactive_mode.p_calls_p_results", { p0: String(stats.toolCalls), p1: String(stats.toolResults) })}\n\n`;
+		info += `${theme.bold(t("interactive_mode.tokens_section"))}\n`;
 		// "Input" is the full prompt volume. With cache activity, split it into
 		// cached (served from cache) vs uncached (everything else) - the only
 		// provider-independent split. Cache writes, where reported, are a detail
 		// of the uncached portion.
 		const { input, cacheRead, cacheWrite } = stats.tokens;
 		const promptTokens = input + cacheRead + cacheWrite;
-		info += `${theme.fg("dim", "Input:")} ${promptTokens.toLocaleString()}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.input_label"))} ${promptTokens.toLocaleString()}\n`;
 		if (promptTokens > 0 && (cacheRead > 0 || cacheWrite > 0)) {
 			const hitRate = theme.fg("dim", `(${((cacheRead / promptTokens) * 100).toFixed(1)}%)`);
-			info += `  ${theme.fg("dim", "Cached:")} ${cacheRead.toLocaleString()} ${hitRate}\n`;
+			info += `  ${theme.fg("dim", t("interactive_mode.cached_label"))} ${cacheRead.toLocaleString()} ${hitRate}\n`;
 			const written =
 				cacheWrite > 0
 					? ` ${theme.fg("dim", t("interactive_mode.p_written_to_cache", { p0: String(cacheWrite.toLocaleString()) }))}`
 					: "";
-			info += `  ${theme.fg("dim", "Uncached:")} ${(input + cacheWrite).toLocaleString()}${written}\n`;
+			info += `  ${theme.fg("dim", t("interactive_mode.uncached_label"))} ${(input + cacheWrite).toLocaleString()}${written}\n`;
 		}
-		info += `${theme.fg("dim", "Output:")} ${stats.tokens.output.toLocaleString()}\n`;
-		info += `${theme.fg("dim", "Total:")} ${stats.tokens.total.toLocaleString()}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.output_label"))} ${stats.tokens.output.toLocaleString()}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.total_label"))} ${stats.tokens.total.toLocaleString()}\n`;
 
 		const cacheWarmingStatus = this.session.cacheWarmingStatus;
-		info += `\n${theme.bold("Cache Warming")}\n`;
-		info += `${theme.fg("dim", "Mode:")} ${this.settingsManager.getCacheWarmingMode()}\n`;
-		info += `${theme.fg("dim", "Status:")} ${cacheWarmingStatus ? formatCacheWarmingStatus(cacheWarmingStatus) : "Inactive (cache warming unavailable)"}\n`;
+		info += `\n${theme.bold(t("interactive_mode.cache_warming_section"))}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.mode_label"))} ${this.settingsManager.getCacheWarmingMode()}\n`;
+		info += `${theme.fg("dim", t("interactive_mode.status_label"))} ${cacheWarmingStatus ? formatCacheWarmingStatus(cacheWarmingStatus) : t("interactive_mode.inactive_cache_warming_unavailable")}\n`;
 		const decision = cacheWarmingStatus?.decision;
 		if (decision?.economicsAvailable) {
-			info += `${theme.fg("dim", "Cache miss penalty:")} $${decision.missCost.toFixed(3)}\n`;
-			info += `${theme.fg("dim", "Refresh cost:")} $${decision.warmCost.toFixed(3)}\n`;
+			info += `${theme.fg("dim", t("interactive_mode.cache_miss_penalty_label"))} $${decision.missCost.toFixed(3)}\n`;
+			info += `${theme.fg("dim", t("interactive_mode.refresh_cost_label"))} $${decision.warmCost.toFixed(3)}\n`;
 		}
 
 		if (stats.cost > 0 || cacheWaste.missedTokens > 0) {
-			info += `\n${theme.bold("Cost")}\n`;
-			info += `${theme.fg("dim", "Total:")} $${stats.cost.toFixed(3)}`;
+			info += `\n${theme.bold(t("interactive_mode.cost_section"))}\n`;
+			info += `${theme.fg("dim", t("interactive_mode.total_label"))} $${stats.cost.toFixed(3)}`;
 			if (usageBreakdown.length > 1) {
 				for (const entry of usageBreakdown) {
 					info += `\n  ${theme.fg("dim", `${entry.key}:`)} $${entry.cost.toFixed(3)} ${theme.fg("dim", `(${formatTokens(entry.tokens)} tokens)`)}`;
