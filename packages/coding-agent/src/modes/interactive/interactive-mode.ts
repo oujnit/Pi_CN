@@ -332,9 +332,9 @@ export function formatCrashExtensionHint(extensionMatches: readonly string[] | u
 		quoted.length === 1
 			? quoted[0]
 			: quoted.length === 2
-				? t("common.list_pair", { p0: quoted[0], p1: quoted[1] })
-				: t("common.list_series", {
-						p0: quoted.slice(0, -1).join(t("common.list_separator")),
+				? t("interactive_mode.list_pair", { p0: quoted[0], p1: quoted[1] })
+				: t("interactive_mode.list_series", {
+						p0: quoted.slice(0, -1).join(t("interactive_mode.list_separator")),
 						p1: quoted[quoted.length - 1],
 					});
 	if (matches.length === 1) {
