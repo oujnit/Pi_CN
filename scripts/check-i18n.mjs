@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import ts from "typescript";
 import { messages as en } from "../packages/coding-agent/src/i18n/en.ts";
 import { messages as zh } from "../packages/coding-agent/src/i18n/zh-CN.ts";
 
@@ -19,6 +18,9 @@ for (const key of enKeys) {
 	}
 }
 
+// typescript@7 no longer ships the compiler JS API, so the hard-coded-Chinese scan runs on raw
+// source: comment lines are stripped, then any remaining CJK character is a violation. The fork's
+// rule is that all Chinese copy lives in the message tables, so this is deliberately strict.
 const sourceRoot = join(root, "packages/coding-agent/src");
 const files = [];
 const visitDirectory = (directory) => {
@@ -30,23 +32,22 @@ const visitDirectory = (directory) => {
 };
 visitDirectory(sourceRoot);
 
+const CJK = /[\u3400-\u9fff]/u;
+const isCommentLine = (line) => {
+	const trimmed = line.trim();
+	return trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*") || trimmed.startsWith("*/");
+};
+
 for (const file of files) {
-	const source = readFileSync(file, "utf8");
-	const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-	const visit = (node) => {
-		if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && /[\u3400-\u9fff]/u.test(node.text)) {
-			const isDefaultSearchAlias =
-				file.endsWith("model-selector.ts") && (node.text === "默认" || node.text === " default 默认");
-			if (!isDefaultSearchAlias) {
-				const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-				errors.push(
-					`${relative(root, file)}:${position.line + 1} contains hard-coded Chinese UI text outside the message table`,
-				);
-			}
-		}
-		ts.forEachChild(node, visit);
-	};
-	visit(sourceFile);
+	const lines = readFileSync(file, "utf8").split("\n");
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		if (isCommentLine(line) || !CJK.test(line)) continue;
+		if (file.endsWith("model-selector.ts") && (line.includes("默认") || line.includes(" default 默认"))) continue;
+		errors.push(
+			`${relative(root, file)}:${i + 1} contains hard-coded Chinese text outside the message table`,
+		);
+	}
 }
 
 if (errors.length > 0) {

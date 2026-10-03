@@ -934,7 +934,9 @@ export class InteractiveMode {
 			});
 			this.chatContainer.addChild(new Text(condensedText, 1, 0));
 		} else {
-			this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", t("interactive_mode.what_s_new"))), 1, 0));
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.bold(theme.fg("accent", t("interactive_mode.what_s_new"))), 1, 0),
+			);
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(
 				new Markdown(this.changelogMarkdown.trim(), 1, 0, this.getMarkdownThemeWithSettings()),
@@ -1087,7 +1089,6 @@ export class InteractiveMode {
 
 		// Add header with keybindings from config (unless silenced)
 		if (this.shouldShowStartupHeader()) {
-			const showDetails = this.shouldShowStartupDetails();
 			// Built on demand so the header follows theme changes. The logo's first line carries the version,
 			// its second line the first line of key hints. Terminals that cannot render the logo get a
 			// "Pi vX" line instead, with the key hints below it.
@@ -1971,7 +1972,11 @@ export class InteractiveMode {
 			if (skillDiagnostics.length > 0) {
 				const warningLines = () => this.formatDiagnostics(skillDiagnostics, sourceInfos);
 				this.loadedResourcesContainer.addChild(
-					new ThemedText(() => `${theme.fg("warning", t("interactive_mode.skill_conflicts"))}\n${warningLines()}`, 0, 0),
+					new ThemedText(
+						() => `${theme.fg("warning", t("interactive_mode.skill_conflicts"))}\n${warningLines()}`,
+						0,
+						0,
+					),
 				);
 				this.loadedResourcesContainer.addChild(new Spacer(1));
 			}
@@ -1980,7 +1985,11 @@ export class InteractiveMode {
 			if (promptDiagnostics.length > 0) {
 				const warningLines = () => this.formatDiagnostics(promptDiagnostics, sourceInfos);
 				this.loadedResourcesContainer.addChild(
-					new ThemedText(() => `${theme.fg("warning", t("interactive_mode.prompt_conflicts"))}\n${warningLines()}`, 0, 0),
+					new ThemedText(
+						() => `${theme.fg("warning", t("interactive_mode.prompt_conflicts"))}\n${warningLines()}`,
+						0,
+						0,
+					),
 				);
 				this.loadedResourcesContainer.addChild(new Spacer(1));
 			}
@@ -2004,7 +2013,11 @@ export class InteractiveMode {
 			if (extensionDiagnostics.length > 0) {
 				const warningLines = () => this.formatDiagnostics(extensionDiagnostics, sourceInfos);
 				this.loadedResourcesContainer.addChild(
-					new ThemedText(() => `${theme.fg("warning", t("interactive_mode.extension_issues"))}\n${warningLines()}`, 0, 0),
+					new ThemedText(
+						() => `${theme.fg("warning", t("interactive_mode.extension_issues"))}\n${warningLines()}`,
+						0,
+						0,
+					),
 				);
 				this.loadedResourcesContainer.addChild(new Spacer(1));
 			}
@@ -2013,7 +2026,11 @@ export class InteractiveMode {
 			if (themeDiagnostics.length > 0) {
 				const warningLines = () => this.formatDiagnostics(themeDiagnostics, sourceInfos);
 				this.loadedResourcesContainer.addChild(
-					new ThemedText(() => `${theme.fg("warning", t("interactive_mode.theme_conflicts"))}\n${warningLines()}`, 0, 0),
+					new ThemedText(
+						() => `${theme.fg("warning", t("interactive_mode.theme_conflicts"))}\n${warningLines()}`,
+						0,
+						0,
+					),
 				);
 				this.loadedResourcesContainer.addChild(new Spacer(1));
 			}
@@ -4703,7 +4720,11 @@ export class InteractiveMode {
 	showWarning(warningMessage: string): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(
-			new ThemedText(() => theme.fg("warning", t("interactive_mode.warning_p", { p0: String(warningMessage) })), 1, 0),
+			new ThemedText(
+				() => theme.fg("warning", t("interactive_mode.warning_p", { p0: String(warningMessage) })),
+				1,
+				0,
+			),
 		);
 		this.ui.requestRender();
 	}
@@ -6863,7 +6884,11 @@ ${packageLines}`,
 			if (currentName) {
 				this.chatContainer.addChild(new Spacer(1));
 				this.chatContainer.addChild(
-					new ThemedText(() => theme.fg("dim", t("interactive_mode.session_name_p", { p0: String(currentName) })), 1, 0),
+					new ThemedText(
+						() => theme.fg("dim", t("interactive_mode.session_name_p", { p0: String(currentName) })),
+						1,
+						0,
+					),
 				);
 			} else {
 				this.showWarning(t("interactive_mode.usage_name_name"));
@@ -6885,7 +6910,11 @@ ${packageLines}`,
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(
-			new ThemedText(() => theme.fg("dim", t("interactive_mode.session_name_set_p", { p0: String(displayName) })), 1, 0),
+			new ThemedText(
+				() => theme.fg("dim", t("interactive_mode.session_name_set_p", { p0: String(displayName) })),
+				1,
+				0,
+			),
 		);
 		this.ui.requestRender();
 	}
@@ -6930,7 +6959,9 @@ ${packageLines}`,
 				const hitRate = theme.fg("dim", `(${((cacheRead / promptTokens) * 100).toFixed(1)}%)`);
 				info += `  ${theme.fg("dim", t("interactive_mode.cached_label"))} ${cacheRead.toLocaleString()} ${hitRate}\n`;
 				const written =
-					cacheWrite > 0 ? ` ${theme.fg("dim", t("interactive_mode.p_written_to_cache", { p0: String(cacheWrite.toLocaleString()) }))}` : "";
+					cacheWrite > 0
+						? ` ${theme.fg("dim", t("interactive_mode.p_written_to_cache", { p0: String(cacheWrite.toLocaleString()) }))}`
+						: "";
 				info += `  ${theme.fg("dim", t("interactive_mode.uncached_label"))} ${(input + cacheWrite).toLocaleString()}${written}\n`;
 			}
 			info += `${theme.fg("dim", t("interactive_mode.output_label"))} ${stats.tokens.output.toLocaleString()}\n`;
@@ -6955,8 +6986,14 @@ ${packageLines}`,
 					}
 				}
 				if (cacheWaste.missedTokens > 0) {
-					const missLabel = cacheWaste.missCount === 1 ? t("interactive_mode.miss") : t("interactive_mode.p_misses", { p0: String(cacheWaste.missCount) });
-					const detail = t("interactive_mode.p_tokens_p", { p0: String(cacheWaste.missedTokens.toLocaleString()), p1: String(missLabel) });
+					const missLabel =
+						cacheWaste.missCount === 1
+							? t("interactive_mode.miss")
+							: t("interactive_mode.p_misses", { p0: String(cacheWaste.missCount) });
+					const detail = t("interactive_mode.p_tokens_p", {
+						p0: String(cacheWaste.missedTokens.toLocaleString()),
+						p1: String(missLabel),
+					});
 					info +=
 						cacheWaste.missedCost >= 0.0001
 							? `\n${theme.fg("dim", t("interactive_mode.cache_re_billed"))} $${cacheWaste.missedCost.toFixed(3)} ${theme.fg("dim", t("interactive_mode.p_2", { p0: String(detail) }))}`
@@ -6985,7 +7022,9 @@ ${packageLines}`,
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new DynamicBorder());
-		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", t("interactive_mode.what_s_new"))), 1, 0));
+		this.chatContainer.addChild(
+			new ThemedText(() => theme.bold(theme.fg("accent", t("interactive_mode.what_s_new"))), 1, 0),
+		);
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
@@ -7116,7 +7155,9 @@ ${packageLines}`,
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new DynamicBorder());
-		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", t("interactive_mode.keyboard_shortcuts"))), 1, 0));
+		this.chatContainer.addChild(
+			new ThemedText(() => theme.bold(theme.fg("accent", t("interactive_mode.keyboard_shortcuts"))), 1, 0),
+		);
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(hotkeys.trim(), 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
@@ -7131,7 +7172,9 @@ ${packageLines}`,
 				return;
 			}
 			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("accent", t("interactive_mode.new_session_started")), 1, 1));
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.fg("accent", t("interactive_mode.new_session_started")), 1, 1),
+			);
 			this.ui.requestRender();
 		} catch (error: unknown) {
 			await this.handleFatalRuntimeError(t("interactive_mode.failed_to_create_session"), error);
@@ -7166,7 +7209,11 @@ ${packageLines}`,
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(
-			new ThemedText(() => `${theme.fg("accent", t("interactive_mode.debug_log_written"))}\n${theme.fg("muted", debugLogPath)}`, 1, 1),
+			new ThemedText(
+				() => `${theme.fg("accent", t("interactive_mode.debug_log_written"))}\n${theme.fg("muted", debugLogPath)}`,
+				1,
+				1,
+			),
 		);
 		this.ui.requestRender();
 	}

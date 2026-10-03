@@ -375,7 +375,8 @@ export const messages = {
 	"settings_selector.clear_override": "  （清除覆盖）",
 	"settings_selector.revert_to_global_default_p": "恢复为全局默认（{p0}）",
 	"settings_selector.tui_mode": "TUI 模式",
-	"settings_selector.interface_layout_fullscreen_mode_is_experimental": "界面布局；regular 模式使用终端正常的回滚缓冲区",
+	"settings_selector.interface_layout_fullscreen_mode_is_experimental":
+		"界面布局；regular 模式使用终端正常的回滚缓冲区",
 	"settings_selector.fullscreen_exit_output": "全屏退出输出",
 	"settings_selector.print_the_transcript_or_only_a_session": "退出全屏模式时输出完整会话记录，或仅显示会话恢复提示",
 	"settings_selector.fullscreen_scrollbar": "全屏滚动条",

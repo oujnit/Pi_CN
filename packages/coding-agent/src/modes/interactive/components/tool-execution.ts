@@ -12,7 +12,6 @@ import {
 } from "@earendil-works/pi-tui";
 import type { ToolDefinition, ToolRenderContext, ToolRenderers } from "../../../core/extensions/types.ts";
 import { t } from "../../../i18n/index.ts";
-import type { Theme } from "../theme/theme.ts";
 
 /** What this component needs from a tool: how to draw it, without executing it. */
 export type { ToolRenderers };
