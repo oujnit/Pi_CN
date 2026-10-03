@@ -18,10 +18,41 @@ export type AuthSelectorProvider = {
 	authType: "oauth" | "api_key";
 	method?: ApiKeyAuth | OAuthAuth;
 	status?: AuthCheck;
+	/**
+	 * Whether the provider's OAuth sign-in is backed by a subscription. `false` labels it as an account;
+	 * unset keeps the "subscription" label.
+	 */
+	subscription?: boolean;
 };
 
-export function formatAuthSelectorProviderType(authType: AuthSelectorProvider["authType"]): string {
-	return authType === "oauth" ? t("oauth_selector.subscription") : t("oauth_selector.api_key");
+export function formatAuthSelectorProviderType(
+	authType: AuthSelectorProvider["authType"],
+	subscription?: boolean,
+): string {
+	if (authType === "api_key") return t("oauth_selector.api_key");
+	return subscription === false ? t("oauth_selector.account") : t("oauth_selector.subscription");
+}
+
+/** Themed suffix describing whether and how a login option is configured, for example " ✓ configured". */
+export function formatAuthSelectorProviderStatus(provider: AuthSelectorProvider): string {
+	if (!provider.status) return theme.fg("muted", t("oauth_selector.unconfigured"));
+	if (provider.status.type !== provider.authType) {
+		const label = t("oauth_selector.p_configured", {
+			p0: formatAuthSelectorProviderType(provider.status.type, provider.subscription),
+		});
+		return theme.fg("muted", " • ") + theme.fg("warning", label);
+	}
+	if (
+		!provider.status.source ||
+		provider.status.source === "OAuth" ||
+		provider.status.source === "stored credential"
+	) {
+		return theme.fg("success", t("oauth_selector.configured"));
+	}
+	const source = /^[A-Z][A-Z0-9_]*(?:, [A-Z][A-Z0-9_]*)*$/.test(provider.status.source)
+		? t("oauth_selector.env_p", { p0: String(provider.status.source) })
+		: provider.status.source;
+	return theme.fg("success", ` ✓ ${source}`);
 }
 
 /**
@@ -131,9 +162,9 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 
 			const isSelected = i === this.selectedIndex;
 
-			const statusIndicator = this.formatStatusIndicator(provider);
+			const statusIndicator = formatAuthSelectorProviderStatus(provider);
 			const authTypeLabel = this.showAuthTypeLabels
-				? theme.fg("muted", ` [${formatAuthSelectorProviderType(provider.authType)}]`)
+				? theme.fg("muted", ` [${formatAuthSelectorProviderType(provider.authType, provider.subscription)}]`)
 				: "";
 			let line = "";
 			if (isSelected) {
@@ -163,28 +194,6 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 					: t("oauth_selector.no_matching_providers");
 			this.listContainer.addChild(new TruncatedText(theme.fg("muted", `  ${message}`), 1, 0));
 		}
-	}
-
-	private formatStatusIndicator(provider: AuthSelectorProvider): string {
-		if (!provider.status) return theme.fg("muted", t("oauth_selector.unconfigured"));
-		if (provider.status.type !== provider.authType) {
-			const label =
-				provider.status.type === "oauth"
-					? t("oauth_selector.subscription_configured")
-					: t("oauth_selector.api_key_configured");
-			return theme.fg("muted", " • ") + theme.fg("warning", label);
-		}
-		if (
-			!provider.status.source ||
-			provider.status.source === "OAuth" ||
-			provider.status.source === "stored credential"
-		) {
-			return theme.fg("success", t("oauth_selector.configured"));
-		}
-		const source = /^[A-Z][A-Z0-9_]*(?:, [A-Z][A-Z0-9_]*)*$/.test(provider.status.source)
-			? t("oauth_selector.env_p", { p0: String(provider.status.source) })
-			: provider.status.source;
-		return theme.fg("success", ` ✓ ${source}`);
 	}
 
 	handleInput(keyData: string): void {

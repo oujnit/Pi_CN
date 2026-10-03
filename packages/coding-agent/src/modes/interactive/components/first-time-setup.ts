@@ -1,23 +1,29 @@
 import { Container, getKeybindings, Spacer, Text } from "@earendil-works/pi-tui";
 import { APP_NAME } from "../../../config.ts";
 import { t } from "../../../i18n/index.ts";
-import { type TerminalTheme, theme } from "../theme/theme.ts";
+import { SYSTEM_THEME_NAME } from "../theme/system-theme.ts";
+import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 import { keyHint, rawKeyHint } from "./keybinding-hints.ts";
 
 export interface FirstTimeSetupResult {
-	theme: TerminalTheme;
+	theme: string;
 	shareAnalytics: boolean;
 }
 
 export interface FirstTimeSetupOptions {
-	detectedTheme: TerminalTheme;
-	onThemePreview: (themeName: TerminalTheme) => void;
+	onThemePreview: (themeName: string) => void;
 	onSubmit: (result: FirstTimeSetupResult) => void;
 	onCancel: () => void;
 }
 
-const THEME_OPTIONS: Array<{ value: TerminalTheme; label: string }> = [
+const THEME_OPTIONS: Array<{ value: string; label: string }> = [
+	{
+		value: SYSTEM_THEME_NAME,
+		get label() {
+			return t("first_time_setup.system_matches_your_terminal_colors");
+		},
+	},
 	{
 		value: "dark",
 		get label() {
@@ -59,11 +65,14 @@ export class FirstTimeSetupComponent extends Container {
 	constructor(options: FirstTimeSetupOptions) {
 		super();
 		this.options = options;
-		this.themeIndex = Math.max(
-			0,
-			THEME_OPTIONS.findIndex((option) => option.value === options.detectedTheme),
-		);
+		this.themeIndex = 0;
 		this.update();
+	}
+
+	/** Rebuild on theme changes, e.g. when the system theme receives the terminal's colors. */
+	override invalidate(): void {
+		this.update();
+		super.invalidate();
 	}
 
 	// Rebuild the whole dialog on every change so theme previews recolor all text.
@@ -88,17 +97,6 @@ export class FirstTimeSetupComponent extends Container {
 
 		if (this.step === "theme") {
 			this.addChild(new Text(() => theme.fg("text", t("first_time_setup.pick_a_theme")), 1, 0));
-			this.addChild(
-				new Text(
-					() =>
-						theme.fg(
-							"muted",
-							t("first_time_setup.detected_system_appearance_p", { p0: String(this.options.detectedTheme) }),
-						),
-					1,
-					0,
-				),
-			);
 			this.addChild(new Spacer(1));
 			this.addOptionList(
 				THEME_OPTIONS.map((option) => option.label),
