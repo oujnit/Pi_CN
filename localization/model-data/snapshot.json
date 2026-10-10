@@ -2,8 +2,8 @@
   "upstreamVersion": "1.0.1",
   "sourceCommit": "a7229ddc",
   "forkCommit": "d1b9c5717205c1e2a0e4ec69bfaea0593615a6dd",
-  "generatedAt": "2026-10-03T15:14:05.607Z",
-  "source": "Pi_CN fork build snapshot produced by upstream generate-models.ts --strict --data-only; not the upstream release snapshot",
+  "generatedAt": "2026-10-10T12:19:38.874Z",
+  "source": "Pi_CN fork model snapshot hydrated from pi.dev typed catalog after azure provider rename (azure-openai-responses \u2192 azure); api id azure-openai-responses unchanged",
   "catalogSources": [
     "https://models.dev/api.json",
     "https://integrate.api.nvidia.com/v1/models",
@@ -11,5 +11,6 @@
     "https://ai-gateway.vercel.sh/v1/models",
     "Radius built-in catalog"
   ],
-  "validation": "data/.manifest.json: upstream structureHash and per-file SHA-256"
+  "validation": "data/.manifest.json: upstream structureHash and per-file SHA-256",
+  "catalogRevision": "sha256-3ff185d61544e1bbe1daf233d8af4b9d19a01311153d67acc4a91a1ca6f1c214"
 }
