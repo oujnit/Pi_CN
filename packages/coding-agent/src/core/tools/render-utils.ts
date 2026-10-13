@@ -2,6 +2,7 @@ import * as os from "node:os";
 import { pathToFileURL } from "node:url";
 import type { ImageContent, TextContent } from "@earendil-works/pi-ai";
 import { getCapabilities, getImageDimensions, hyperlink, imageFallback } from "@earendil-works/pi-tui";
+import { t } from "../../i18n/index.ts";
 import type { Theme } from "../../modes/interactive/theme/theme.ts";
 import { stripAnsi } from "../../utils/ansi.ts";
 import { resolvePath } from "../../utils/paths.ts";
@@ -144,10 +145,11 @@ export function toolTimerText(context: ToolRenderContext<ToolTimerState>, isPart
 	}
 	// A final result's recorded duration wins: it is monotonic and survives reloads. The renderer's own clock is the
 	// fallback for live progress and for results stored without one.
-	if (!isPartial && context.durationMs !== undefined) return `Took ${formatToolDuration(context.durationMs)}`;
+	if (!isPartial && context.durationMs !== undefined)
+		return `${t("bash.took")} ${formatToolDuration(context.durationMs)}`;
 	if (state.startedAt === undefined) return undefined;
 	const endTime = state.endedAt ?? Date.now();
-	return `${isPartial ? "Elapsed" : "Took"} ${formatToolDuration(endTime - state.startedAt)}`;
+	return `${isPartial ? t("bash.elapsed") : t("bash.took")} ${formatToolDuration(endTime - state.startedAt)}`;
 }
 
 export function invalidArgText(theme: Theme): string {

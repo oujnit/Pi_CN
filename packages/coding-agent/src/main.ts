@@ -142,7 +142,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 	try {
 		command = parseAuthCommand(args);
 	} catch (error) {
-		const message = error instanceof AuthCommandError ? error.message : t("main.failed_to_parse_auth_command");
+		const message = error instanceof AuthCommandError ? error.message : "Failed to parse auth command";
 		console.error(chalk.red(`Error: ${message}`));
 		process.exitCode = 1;
 		return true;
@@ -153,9 +153,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 	if (parsed.unknownFlags.size > 0) {
 		const option = parsed.unknownFlags.keys().next().value;
 		console.error(chalk.red(`Unknown option --${option} for "${getAuthCommandName(command.kind)}".`));
-		console.error(
-			chalk.dim(t("main.use_p_help_or_p", { p0: String(APP_NAME), p1: String(getAuthCommandUsage(command.kind)) })),
-		);
+		console.error(chalk.dim(`Use "${APP_NAME} --help" or "${getAuthCommandUsage(command.kind)}".`));
 		process.exitCode = 1;
 		return true;
 	}
@@ -205,7 +203,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 		process.stdout.write(`${output}\n`);
 		process.exitCode = result.status === "ready" ? 0 : result.status === "not_ready" ? 1 : 2;
 	} catch (error) {
-		const message = error instanceof AuthCommandError ? error.message : t("main.failed_to_resolve_credential");
+		const message = error instanceof AuthCommandError ? error.message : "Failed to resolve credential";
 		console.error(chalk.red(`Error: ${message}`));
 		process.exitCode = command.kind === "check" ? 2 : 1;
 	}

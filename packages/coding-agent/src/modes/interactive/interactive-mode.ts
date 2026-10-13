@@ -266,7 +266,7 @@ class BuiltInHeader extends ExpandableText {
 }
 
 /** Build the startup help from the active language each time the header renders. */
-export function buildStartupHelp(expanded: boolean): string {
+export function buildStartupHelp(expanded: boolean, showDetails = true): string {
 	const hint = (keybinding: AppKeybinding, description: string) => keyHint(keybinding, description);
 	const onboarding = theme.fg("dim", t("interactive_mode.pi_can_explain_its_own_features_and"));
 	if (expanded) {
@@ -306,7 +306,12 @@ export function buildStartupHelp(expanded: boolean): string {
 	].join(theme.fg("muted", " · "));
 	const compactOnboarding = theme.fg(
 		"dim",
-		t("interactive_mode.press_p_to_show_full_startup_help", { p0: String(keyText("app.tools.expand")) }),
+		t(
+			showDetails
+				? "interactive_mode.press_p_to_show_full_startup_help"
+				: "interactive_mode.press_p_to_show_startup_help_only",
+			{ p0: String(keyText("app.tools.expand")) },
+		),
 	);
 	return `${instructions}\n${compactOnboarding}\n\n${onboarding}`;
 }
@@ -1110,7 +1115,7 @@ export class InteractiveMode {
 			};
 
 			const header = new BuiltInHeader(
-				() => withLogo(buildStartupHelp(false)),
+				() => withLogo(buildStartupHelp(false, this.shouldShowStartupDetails())),
 				() => withLogo(buildStartupHelp(true)),
 
 				this.getStartupExpansionState(),
