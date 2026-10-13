@@ -3,14 +3,18 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { platform, tmpdir } from "node:os";
 import { join } from "node:path";
 import { getNativeClipboard } from "@earendil-works/pi-tui";
-import { t } from "../i18n/index.ts";
 import { runClipboardCommand } from "./clipboard-command.ts";
 import { isWSL } from "./wsl.ts";
 
 const MAX_OSC52_ENCODED_LENGTH = 100_000;
 
+/**
+ * Remote sessions also emit OSC 52 so the client terminal receives the copy. PI_CLIPBOARD_OSC52=1
+ * covers remote clients that leave no SSH markers, such as multiplexer attaches (#10114, #10835)
+ * or IDE daemons (#10826).
+ */
 function isRemoteSession(env: NodeJS.ProcessEnv): boolean {
-	return Boolean(env.SSH_CONNECTION || env.SSH_CLIENT || env.MOSH_CONNECTION);
+	return Boolean(env.SSH_CONNECTION || env.SSH_CLIENT || env.MOSH_CONNECTION || env.PI_CLIPBOARD_OSC52 === "1");
 }
 
 function emitOsc52(text: string): boolean {
@@ -53,17 +57,18 @@ async function copyViaWindowsClipboard(text: string): Promise<boolean> {
 
 /** Read plain text from the system clipboard. */
 export async function readClipboardText(): Promise<string | null> {
+	const commands: [string, string[]][] = [];
+	// Termux reports platform "android", not "linux" (#10391).
+	if (process.env.TERMUX_VERSION) commands.push(["termux-clipboard-get", []]);
 	if (platform() === "linux") {
-		const commands: [string, string[]][] = [];
-		if (process.env.TERMUX_VERSION) commands.push(["termux-clipboard-get", []]);
 		if (process.env.WAYLAND_DISPLAY) commands.push(["wl-paste", ["--no-newline", "--type", "text"]]);
 		if (process.env.DISPLAY) {
 			commands.push(["xclip", ["-selection", "clipboard", "-out"]], ["xsel", ["--clipboard", "--output"]]);
 		}
-		for (const [command, args] of commands) {
-			const bytes = await runClipboardCommand(command, args, { timeoutMs: 5000 });
-			if (bytes !== undefined) return bytes.toString("utf8") || null;
-		}
+	}
+	for (const [command, args] of commands) {
+		const bytes = await runClipboardCommand(command, args, { timeoutMs: 5000 });
+		if (bytes !== undefined) return bytes.toString("utf8") || null;
 	}
 	try {
 		return (await getNativeClipboard()?.getText()) || null;
@@ -129,17 +134,17 @@ export async function copyToClipboard(text: string): Promise<void> {
 		else oversized = true;
 	}
 	if (copied) return;
-	if (oversized) throw new Error(t("clipboard.clipboard_unavailable_text_exceeds_the_osc"));
+	if (oversized) throw new Error("Clipboard unavailable: text exceeds the OSC 52 size limit");
+	if (env.TERMUX_VERSION) {
+		throw new Error("Clipboard unavailable: install the Termux:API app and `termux-api` package");
+	}
 	if (p === "linux") {
-		if (env.TERMUX_VERSION) {
-			throw new Error(t("clipboard.clipboard_unavailable_install_the_termux_api"));
-		}
 		if (env.WAYLAND_DISPLAY) {
-			throw new Error(t("clipboard.clipboard_unavailable_install_wl_clipboard_wl"));
+			throw new Error("Clipboard unavailable: install `wl-clipboard` (`wl-copy`) or check Wayland access");
 		}
 		if (env.DISPLAY) {
-			throw new Error(t("clipboard.clipboard_unavailable_install_xclip_or_xsel"));
+			throw new Error("Clipboard unavailable: install `xclip` or `xsel`, or check X11 access");
 		}
 	}
-	throw new Error(t("clipboard.clipboard_unavailable"));
+	throw new Error("Clipboard unavailable");
 }

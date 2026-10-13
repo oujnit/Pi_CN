@@ -67,7 +67,7 @@ import { loadMcpCommand } from "./extensions/mcp/cli.lazy.ts";
 import { runMigrations, showDeprecationWarnings } from "./migrations.ts";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.ts";
 import { initTheme, setThemeJsonValidator, stopThemeWatcher } from "./modes/interactive/theme/theme.ts";
-import { validateThemeJson } from "./modes/interactive/theme/theme-json.ts";
+import { validateThemeJson } from "./modes/interactive/theme/theme-schema.ts";
 import { cleanupManagedInstall, handleConfigCommand, handlePackageCommand } from "./package-manager-cli.ts";
 import { isLocalPath, normalizePath, resolvePath } from "./utils/paths.ts";
 import { cleanupWindowsSelfUpdateQuarantine } from "./utils/windows-self-update.ts";
@@ -142,7 +142,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 	try {
 		command = parseAuthCommand(args);
 	} catch (error) {
-		const message = error instanceof AuthCommandError ? error.message : t("main.failed_to_parse_auth_command");
+		const message = error instanceof AuthCommandError ? error.message : "Failed to parse auth command";
 		console.error(chalk.red(`Error: ${message}`));
 		process.exitCode = 1;
 		return true;
@@ -153,9 +153,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 	if (parsed.unknownFlags.size > 0) {
 		const option = parsed.unknownFlags.keys().next().value;
 		console.error(chalk.red(`Unknown option --${option} for "${getAuthCommandName(command.kind)}".`));
-		console.error(
-			chalk.dim(t("main.use_p_help_or_p", { p0: String(APP_NAME), p1: String(getAuthCommandUsage(command.kind)) })),
-		);
+		console.error(chalk.dim(`Use "${APP_NAME} --help" or "${getAuthCommandUsage(command.kind)}".`));
 		process.exitCode = 1;
 		return true;
 	}
@@ -205,7 +203,7 @@ async function runAuthCommand(args: string[]): Promise<boolean> {
 		process.stdout.write(`${output}\n`);
 		process.exitCode = result.status === "ready" ? 0 : result.status === "not_ready" ? 1 : 2;
 	} catch (error) {
-		const message = error instanceof AuthCommandError ? error.message : t("main.failed_to_resolve_credential");
+		const message = error instanceof AuthCommandError ? error.message : "Failed to resolve credential";
 		console.error(chalk.red(`Error: ${message}`));
 		process.exitCode = command.kind === "check" ? 2 : 1;
 	}
@@ -608,6 +606,8 @@ async function runMain(
 	bootstrapSettingsManager: SettingsManager,
 ): Promise<void> {
 	resetTimings();
+	// Startup selectors can load custom themes before runtime creation.
+	setThemeJsonValidator(validateThemeJson);
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
 	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];
@@ -617,7 +617,8 @@ async function runMain(
 		process.env.PI_SKIP_VERSION_CHECK = "1";
 	}
 
-	if (await runAuthCommand(args)) {
+	// Credential commands keep their diagnostics and machine-readable output in upstream English.
+	if (await new LanguageContext("en").run(() => runAuthCommand(args))) {
 		return;
 	}
 
@@ -824,6 +825,7 @@ async function runMain(
 				additionalPromptTemplatePaths: resolvedPromptTemplatePaths,
 				additionalThemePaths: resolvedThemePaths,
 				noExtensions: parsed.noExtensions,
+				disabledBuiltinExtensions: parsed.noMcp ? ["mcp"] : undefined,
 				noSkills: parsed.noSkills,
 				noPromptTemplates: parsed.noPromptTemplates,
 				noThemes: parsed.noThemes,
@@ -941,8 +943,6 @@ async function runMain(
 
 	const { initialMessage, initialImages } = await prepareInitialMessage(parsed, stdinContent);
 	time("prepareInitialMessage");
-	// pi reads user-authored themes, so it opts into full validation before any theme loads.
-	setThemeJsonValidator(validateThemeJson);
 	initTheme(settingsManager.getTheme(), appMode === "interactive");
 	time("initTheme");
 
@@ -958,7 +958,7 @@ async function runMain(
 		reportDiagnostics(startupDiagnostics);
 	}
 	if (hasRuntimeErrors) {
-		if (runtime.diagnostics.some((diagnostic) => diagnostic.message.includes(t("main.failed_to_load_extension")))) {
+		if (runtime.diagnostics.some((diagnostic) => diagnostic.message.includes("Failed to load extension"))) {
 			console.error(chalk.yellow(extensionLoadFailureHint()));
 		}
 		process.exit(1);

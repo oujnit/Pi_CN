@@ -16,7 +16,7 @@
 
 This is the home of the Pi agent harness project including our self extensible coding agent.
 
-> This unofficial Pi_CN fork is based on upstream v1.0.1. It starts in Simplified Chinese and supports English through `--lang en`, `PI_LANG=en`, or the live “Language / 语言” setting. Source builds use `npm ci --ignore-scripts` followed by `npm run build:zh`; the latter restores and validates the fork's checked-in model-data snapshot without accessing the online model catalog.
+> This unofficial Pi_CN fork is based on upstream v1.2.0. It starts in Simplified Chinese and supports English through `--lang en`, `PI_LANG=en`, or the live “Language / 语言” setting. Source builds use `npm ci --ignore-scripts` followed by `npm run build:zh`; the latter restores and validates the fork's checked-in model-data snapshot without accessing the online model catalog.
 
 * **[@earendil-works/pi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
 * **[@earendil-works/pi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
@@ -62,9 +62,12 @@ npm run build:zh      # Validate the Pi_CN model snapshot and build offline
 npm run build         # Refresh model data, then build all packages
 npm run build:offline # Rebuild using existing model data without network access
 npm run check         # Lint, format, and type check
-./test.sh            # Run tests (skips LLM-dependent tests without API keys)
+npm run build:daemon --workspace packages/env # Build the Rust daemon before the full suite (requires Cargo)
+./test.sh            # Isolate user resources and credentials; skip real-provider tests
 ./pi-test.sh         # Run pi from sources (can be run from any directory)
 ```
+
+On macOS, use `TMPDIR=/tmp ./test.sh` if the long system temporary path exceeds Unix socket limits. The Rust test daemon is not required to use the CLI.
 
 ## Building standalone binaries from release source
 

@@ -20,13 +20,17 @@ describe("startup help language", () => {
 
 		language.run(() => {
 			expect(stripAnsi(buildStartupHelp(false))).toContain("查看完整启动帮助和已加载资源");
+			expect(stripAnsi(buildStartupHelp(false, false))).not.toContain("已加载资源");
 			expect(stripAnsi(buildStartupHelp(true))).toContain("删除至行尾");
+			expect(stripAnsi(buildStartupHelp(true))).toContain("粘贴文件（macOS）、图片或文本");
 		});
 
 		language.setLanguage("en");
 		language.run(() => {
 			expect(stripAnsi(buildStartupHelp(false))).toContain("show full startup help and loaded resources");
+			expect(stripAnsi(buildStartupHelp(false, false))).not.toContain("loaded resources");
 			expect(stripAnsi(buildStartupHelp(true))).toContain("delete to end");
+			expect(stripAnsi(buildStartupHelp(true))).toContain("paste files on macOS, images, or text");
 		});
 	});
 });
