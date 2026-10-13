@@ -617,7 +617,8 @@ async function runMain(
 		process.env.PI_SKIP_VERSION_CHECK = "1";
 	}
 
-	if (await runAuthCommand(args)) {
+	// Credential commands keep their diagnostics and machine-readable output in upstream English.
+	if (await new LanguageContext("en").run(() => runAuthCommand(args))) {
 		return;
 	}
 

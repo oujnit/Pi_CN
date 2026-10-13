@@ -84,6 +84,21 @@ describe("credential print commands", () => {
 		}
 	});
 
+	test.each(["zh-CN", "en"])("keeps auth argument diagnostics in English with --lang %s", async (language) => {
+		const originalExitCode = process.exitCode;
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			process.exitCode = undefined;
+			await main(["--lang", language, "auth", "print-api-key", "--mode", "invalid"]);
+			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
+			expect(stderr).toContain('Error: Invalid mode "invalid". Valid values: text, json, rpc');
+			expect(process.exitCode).toBe(1);
+		} finally {
+			process.exitCode = originalExitCode;
+			errorSpy.mockRestore();
+		}
+	});
+
 	test("parses credential commands and rejects invalid arguments or credential types", async () => {
 		const runtime = await createRuntime(
 			AuthStorage.inMemory({
