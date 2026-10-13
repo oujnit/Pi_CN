@@ -608,6 +608,8 @@ async function runMain(
 	bootstrapSettingsManager: SettingsManager,
 ): Promise<void> {
 	resetTimings();
+	// Startup selectors can load custom themes before runtime creation.
+	setThemeJsonValidator(validateThemeJson);
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
 	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];
@@ -824,6 +826,7 @@ async function runMain(
 				additionalPromptTemplatePaths: resolvedPromptTemplatePaths,
 				additionalThemePaths: resolvedThemePaths,
 				noExtensions: parsed.noExtensions,
+				disabledBuiltinExtensions: parsed.noMcp ? ["mcp"] : undefined,
 				noSkills: parsed.noSkills,
 				noPromptTemplates: parsed.noPromptTemplates,
 				noThemes: parsed.noThemes,
@@ -941,8 +944,6 @@ async function runMain(
 
 	const { initialMessage, initialImages } = await prepareInitialMessage(parsed, stdinContent);
 	time("prepareInitialMessage");
-	// pi reads user-authored themes, so it opts into full validation before any theme loads.
-	setThemeJsonValidator(validateThemeJson);
 	initTheme(settingsManager.getTheme(), appMode === "interactive");
 	time("initTheme");
 
@@ -958,7 +959,7 @@ async function runMain(
 		reportDiagnostics(startupDiagnostics);
 	}
 	if (hasRuntimeErrors) {
-		if (runtime.diagnostics.some((diagnostic) => diagnostic.message.includes(t("main.failed_to_load_extension")))) {
+		if (runtime.diagnostics.some((diagnostic) => diagnostic.message.includes("Failed to load extension"))) {
 			console.error(chalk.yellow(extensionLoadFailureHint()));
 		}
 		process.exit(1);
