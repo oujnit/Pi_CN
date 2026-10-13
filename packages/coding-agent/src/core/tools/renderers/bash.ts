@@ -41,9 +41,11 @@ function rebuildBashResultRenderComponent(
 	result: {
 		content: Array<{ type: string; text?: string; data?: string; mimeType?: string }>;
 		details?: BashToolDetails;
+		durationMs?: number;
 	},
 	options: ToolRenderResultOptions,
 	showImages: boolean,
+	durationMs: number | undefined,
 	startedAt: number | undefined,
 	endedAt: number | undefined,
 ): void {
@@ -107,10 +109,13 @@ function rebuildBashResultRenderComponent(
 		component.addChild(new Text(`\n${theme.fg("warning", `[${warnings.join(". ")}]`)}`, 0, 0));
 	}
 
-	if (startedAt !== undefined) {
+	if (startedAt !== undefined || durationMs !== undefined) {
 		const label = options.isPartial ? t("bash.elapsed") : t("bash.took");
 		const endTime = endedAt ?? Date.now();
-		component.addChild(new Text(`\n${theme.fg("muted", `${label} ${formatDuration(endTime - startedAt)}`)}`, 0, 0));
+		const duration = durationMs ?? (startedAt === undefined ? undefined : endTime - startedAt);
+		if (duration !== undefined) {
+			component.addChild(new Text(`\n${theme.fg("muted", `${label} ${formatDuration(duration)}`)}`, 0, 0));
+		}
 	}
 }
 
@@ -145,6 +150,7 @@ export function createShellRenderers(prompt: string): Pick<ToolDefinition<any, a
 				result as any,
 				options,
 				context.showImages,
+				context.durationMs,
 				state.startedAt,
 				state.endedAt,
 			);

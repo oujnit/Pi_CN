@@ -59,6 +59,7 @@ import {
 	APP_NAME,
 	APP_TITLE,
 	CONFIG_DIR_NAME,
+	detectInstallChange,
 	getAgentDir,
 	getAuthPath,
 	getDebugLogPath,
@@ -616,6 +617,7 @@ export class InteractiveMode {
 
 	/** The `/bug` hint is shown at most once per session so error output stays readable. */
 	private bugReportHintShown = false;
+	private installChangeWarningShown = false;
 
 	// Extension UI state
 	private extensionSelector: ExtensionSelectorComponent | undefined = undefined;
@@ -2253,7 +2255,30 @@ export class InteractiveMode {
 	private maybeSuggestBugReport(message: AssistantMessage): void {
 		if (message.stopReason !== "error" || isRetryableAssistantError(message)) return;
 		if (/\b(?:abort(?:ed)?|cancel(?:l?ed)?)\b/i.test(message.errorMessage ?? "")) return;
+		if (this.maybeShowInstallChangeWarning()) return;
 		this.suggestBugReport();
+	}
+
+	/** Warn when an update replaced the running install and lazy-loaded modules may now fail. */
+	private maybeShowInstallChangeWarning(): boolean {
+		if (this.installChangeWarningShown) return true;
+		const change = detectInstallChange();
+		if (!change) return false;
+		this.installChangeWarningShown = true;
+		const cause =
+			change.kind === "updated"
+				? t("interactive_mode.install_updated_while_running", {
+						p0: APP_NAME,
+						p1: change.version,
+						p2: VERSION,
+					})
+				: t("interactive_mode.install_removed_or_replaced", { p0: APP_NAME });
+		const resumeCommand = formatResumeCommand(this.sessionManager);
+		const restart = resumeCommand
+			? t("interactive_mode.restart_with_session", { p0: resumeCommand })
+			: t("interactive_mode.restart_app", { p0: APP_NAME });
+		this.showWarning(t("interactive_mode.install_change_warning", { p0: cause, p1: restart }));
+		return true;
 	}
 
 	private renderCurrentSessionState(): void {
@@ -4135,6 +4160,7 @@ export class InteractiveMode {
 		entries: SessionEntry[],
 		options: { updateFooter?: boolean; populateHistory?: boolean } = {},
 	): void {
+		if (this.renderer instanceof TuiAltScreen) this.renderer.resetTextSelection();
 		const items = entries.flatMap((entry): RenderSessionItem[] => {
 			if (entry.type === "custom" || (entry.type === "usage" && entry.kind === "cache_warm")) {
 				return [entry];

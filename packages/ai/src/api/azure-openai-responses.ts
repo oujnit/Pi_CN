@@ -12,9 +12,9 @@ import { type AzureEndpointOptions, resolveAzureConfig, resolveDeploymentName } 
 import { createGrammarToolInputProperties } from "./constrained-sampling.ts";
 import { clampOpenAIPromptCacheKey } from "./openai-prompt-cache.ts";
 import { convertResponsesMessages, convertResponsesTools, processResponsesStream } from "./openai-responses-shared.ts";
-import { buildBaseOptions } from "./simple-options.ts";
+import { buildBaseOptions, resolveSamplingParams } from "./simple-options.ts";
 
-const AZURE_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode", "azure", "azure-openai-responses"]);
+const AZURE_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode", "azure"]);
 // OpenAI Responses rejects max_output_tokens below 16: https://github.com/earendil-works/pi/issues/6265
 const OPENAI_RESPONSES_MIN_OUTPUT_TOKENS = 16;
 
@@ -240,7 +240,10 @@ function buildParams(
 	}
 
 	// Last so model and request sampling parameters override named request fields.
-	Object.assign(params, model.samplingParams, options?.samplingParams);
+	const samplingParams = resolveSamplingParams(model, reasoningEffort ?? "off", options?.samplingParams);
+	if (samplingParams) {
+		Object.assign(params, samplingParams);
+	}
 
 	return params;
 }
