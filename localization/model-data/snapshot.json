@@ -11,6 +11,5 @@
     "https://ai-gateway.vercel.sh/v1/models",
     "Radius built-in catalog"
   ],
-  "validation": "data/.manifest.json: schema version, structureHash and per-file SHA-256",
-  "catalogRevision": "sha256-3ff185d61544e1bbe1daf233d8af4b9d19a01311153d67acc4a91a1ca6f1c214"
+  "validation": "data/.manifest.json: schema version, structureHash and per-file SHA-256"
 }
