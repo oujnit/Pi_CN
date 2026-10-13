@@ -52,7 +52,7 @@ Pi 不内置用于限制文件系统、进程、网络或凭据访问的权限�
 
 ## 汉化说明
 
-本 Fork 为 `packages/coding-agent` 建立了类型化的中英文文案表。中文覆盖主要 CLI、交互界面和已有汉化内容；实验功能仅迁移已有译文。
+本 Fork 为 `packages/coding-agent` 建立了类型化的中英文文案表。中文覆盖主要 CLI、交互界面和已有汉化内容。本轮同步上游 v1.2.0，并保留新版终端状态通知、工具计时、主题校验和终端失效退出修复。
 
 **已汉化**
 
@@ -72,7 +72,7 @@ Pi 不内置用于限制文件系统、进程、网络或凭据访问的权限�
 - HTML 导出、上游长篇文档、工具名与协议字符串、CLI 参数名和模型 ID
 - 术语表统一为：provider→供应商、session→会话、fork→派生、extension→扩展、skill→技能、compaction→压缩、thinking→思考
 
-**尚未汉化**：`pi install/update/list` 等包管理子命令、`/share` 分享流程、`auth` 子命令的输出，以及实验功能（`experimental/` 下的 mini/micro TUI）的新增文案；全屏模式下的 `Copied!`/`Copy failed` 位于无文案层的 `packages/tui` 库内。这些不影响交互界面主流程。
+**尚未汉化**：`pi install/update/list` 等包管理子命令、`/share` 分享流程和 `auth` 子命令的输出；全屏模式下的 `Copied!`/`Copy failed` 位于无文案层的 `packages/tui` 库内。上游 v1.2.0 已移除未发布的实验性客户端、服务端和 mini/micro TUI。
 
 语言启动优先级为：`--lang` → `PI_LANG` → 全局 `settings.json` 中的 `language` → 简体中文。支持的值为 `zh-CN` 和 `en`，项目设置不会覆盖语言。
 
@@ -128,9 +128,12 @@ npm run build:zh      # 恢复并校验 Fork 快照，然后离线构建全部�
 npm run prepare:zh    # 只恢复并校验模型数据快照
 npm run build         # 刷新在线模型数据，然后构建所有包（上游开发流程）
 npm run check         # Lint、格式化与类型检查
-./test.sh            # 运行测试（无 API key 时跳过依赖 LLM 的测试）
+npm run build:daemon --workspace packages/env # 完整测试前构建 Rust 测试守护进程（需要 Cargo）
+./test.sh            # 隔离用户配置与凭据，跳过需要真实供应商的测试
 ./pi-test.sh         # 从源码运行 pi（可在任意目录执行）
 ```
+
+macOS 的临时目录路径较长，若测试报告 Unix socket 路径错误，可用 `TMPDIR=/tmp ./test.sh`。正常使用 CLI 不需要构建 Rust 测试守护进程。
 
 ## 从发布源码构建独立二进制
 

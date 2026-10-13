@@ -62,9 +62,12 @@ npm run build:zh      # Validate the Pi_CN model snapshot and build offline
 npm run build         # Refresh model data, then build all packages
 npm run build:offline # Rebuild using existing model data without network access
 npm run check         # Lint, format, and type check
-./test.sh            # Run tests (skips LLM-dependent tests without API keys)
+npm run build:daemon --workspace packages/env # Build the Rust daemon before the full suite (requires Cargo)
+./test.sh            # Isolate user resources and credentials; skip real-provider tests
 ./pi-test.sh         # Run pi from sources (can be run from any directory)
 ```
+
+On macOS, use `TMPDIR=/tmp ./test.sh` if the long system temporary path exceeds Unix socket limits. The Rust test daemon is not required to use the CLI.
 
 ## Building standalone binaries from release source
 
