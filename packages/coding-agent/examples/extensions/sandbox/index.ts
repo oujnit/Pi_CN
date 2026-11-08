@@ -48,9 +48,9 @@ import { SandboxManager, type SandboxRuntimeConfig } from "@anthropic-ai/sandbox
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { type BashOperations, CONFIG_DIR_NAME, createBashTool, getAgentDir } from "@earendil-works/pi-coding-agent";
 
-interface SandboxConfig extends SandboxRuntimeConfig {
+type SandboxConfig = SandboxRuntimeConfig & {
 	enabled?: boolean;
-}
+};
 
 const DEFAULT_CONFIG: SandboxConfig = {
 	enabled: true,
